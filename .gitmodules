@@ -1,0 +1,3 @@
+[submodule "lowpoly-pdf-to-svg"]
+	path = lowpoly-pdf-to-svg
+	url = https://github.com/tungufoss/lowpoly-pdf-to-svg.git

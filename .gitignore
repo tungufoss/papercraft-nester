@@ -1,0 +1,5 @@
+.vendor/
+__pycache__/
+*.py[cod]
+.venv/
+output/*.png

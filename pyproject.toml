@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "papercraft-nester"
+version = "0.1.0"
+description = "Nest papercraft SVG pieces onto finite colored cardstock inventory"
+requires-python = ">=3.11"
+dependencies = ["shapely>=2.0"]
+
+[project.scripts]
+papercraft-nester = "papercraft_nester.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
