@@ -1,0 +1,40 @@
+---
+title: "papercraft-nester"
+subtitle: "Plan a cut layout around the cardstock you actually have"
+---
+
+`papercraft-nester` takes the editable piece groups from a `lowpoly-pdf-to-svg` pattern and packs
+them onto a finite inventory of cardstock sheets. It exports one SVG master with an Inkscape page
+for each physical sheet, preserving each piece's outline, folds, labels, ID, and material.
+
+The tool is intended to help answer practical questions before cutting: how many sheets of each
+colour are needed, how much of each sheet is used, and how much repositioning might the new layout
+save. The [guide](guide.qmd) walks through a Bowser run; [methods](methods.qmd) explains how the
+placement search works and where it can fall back to the source layout.
+
+## Quick start
+
+From the nester repository root, install it and run the Bowser example from a models repository
+that contains the converter output and manifest:
+
+```sh
+python -m pip install -e .
+papercraft-nester nest \
+  --svg ../../data/bowser/bowser.svg \
+  --manifest ../../data/bowser/bowser.yaml \
+  --inventory config/bowser-letter.json \
+  --output output/bowser-letter-master.svg
+```
+
+See the [full guide](guide.qmd) for setup, inventory changes, options, and Cricut handoff notes.
+
+## What it preserves
+
+- Each complete piece moves as a unit, keeping its cut path, mountain and valley folds, labels,
+  piece ID, and cardstock material together.
+- The inventory specifies sheet dimensions and quantity per material, so the packer cannot use
+  more stock than is available.
+- The output is a multi-page SVG master, with one Inkscape page per sheet.
+
+The optimizer uses deterministic placement heuristics. Its result is a useful layout candidate,
+not a proof that no better arrangement exists. Glue tabs are retained intact in the current mode.

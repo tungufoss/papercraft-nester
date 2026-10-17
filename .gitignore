@@ -3,3 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 output/*.png
+
+/.quarto/
+**/*.quarto_ipynb
+/_site/

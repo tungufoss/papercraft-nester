@@ -1,0 +1,72 @@
+project:
+  type: website
+  output-dir: _site
+  render: ["*.qmd"]
+  resources:
+    - styles/hi-watermark.css
+    - img/hi/hi_logo.svg
+
+lang: en
+
+website:
+  title: "papercraft-nester"
+  description: "Nest papercraft pieces onto finite cardstock inventory."
+  site-url: https://tungufoss.github.io/papercraft-nester/
+  repo-url: https://github.com/tungufoss/papercraft-nester
+  repo-actions: [edit, issue]
+  favicon: img/hi/favicon.svg
+  page-navigation: true
+  search:
+    location: navbar
+    type: overlay
+  navbar:
+    logo: img/hi/hi_named_logo-en.svg
+    logo-alt: "University of Iceland"
+    background: primary
+    left:
+      - text: Home
+        href: index.qmd
+      - text: Guide
+        href: guide.qmd
+      - text: Methods
+        href: methods.qmd
+    right:
+      - icon: github
+        href: https://github.com/tungufoss/papercraft-nester
+        aria-label: Source on GitHub
+  sidebar:
+    style: floating
+    collapse-level: 1
+    contents:
+      - index.qmd
+      - section: "Use the nester"
+        contents:
+          - guide.qmd
+      - section: "How it works"
+        contents:
+          - methods.qmd
+  page-footer:
+    right:
+      - text: "quarto-hi"
+        href: https://github.com/HI-IDN/quarto-hi
+
+format:
+  html:
+    theme:
+      - cosmo
+      - styles/hi-site.scss
+    css: styles/hi-watermark.css
+    include-in-header:
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    toc: true
+    code-copy: true
+    code-overflow: wrap
+
+execute:
+  echo: false
+  warning: false
+  message: false

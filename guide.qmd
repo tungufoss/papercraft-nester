@@ -1,0 +1,67 @@
+---
+title: "Guide"
+subtitle: "From traced pattern to a sheet-by-sheet SVG master"
+---
+
+## 1. Prepare the converter output
+
+The nester reads the editable piece groups from the SVG and cardstock assignments from the YAML
+manifest. In the models repository, run the lowpoly converter first:
+
+```sh
+make -C tools/lowpoly-pdf-to-svg CONFIG="$PWD/data/bowser/bowser.yaml"
+```
+
+The converter needs the source PDF locally. It writes `data/bowser/bowser.svg`; the PDF itself is
+not needed by the nester. Keep the SVG and YAML paths together so the material names match.
+
+## 2. Describe your available sheets
+
+Start with `config/bowser-letter.json`. It records a minimum piece gap, rotation search step,
+material colors, and an inventory list. Each row gives a material ID, sheet width and height in
+millimetres, and how many sheets are available:
+
+```json
+{
+  "minimum_gap_mm": 0.2,
+  "rotation_step_degrees": 5.0,
+  "sheets": [
+    {"material": "red", "width_mm": 215.9, "height_mm": 279.4, "quantity": 7}
+  ]
+}
+```
+
+Edit the inventory to match your stock. You can include different sheet sizes for the same
+material by adding another row. The minimum gap is the clearance between pieces; choose a value
+that accounts for your cutter and cardstock.
+
+## 3. Run the nesting command
+
+From `tools/papercraft-nester` in the models repository:
+
+```sh
+python -m pip install -e .
+papercraft-nester nest \
+  --svg ../../data/bowser/bowser.svg \
+  --manifest ../../data/bowser/bowser.yaml \
+  --inventory config/bowser-letter.json \
+  --output output/bowser-letter-master.svg
+```
+
+You can also run `python -m papercraft_nester.cli nest` with `PYTHONPATH=src`. Optional flags
+include `--gap-mm` and `--rotation-step` to override the inventory settings, and
+`--source-baseline` to write the original page placement for comparison.
+
+The report lists the source and packed sheet counts, utilization per packed sheet, and estimated
+inter-piece reposition distance. If the heuristic cannot fit the inventory, it writes the source
+page arrangement as a comparison baseline and reports that choice.
+
+## 4. Inspect and hand off the output
+
+Open `output/bowser-letter-master.svg` in Inkscape. It has one page per physical sheet, with
+pieces grouped by material and their original operation groups and annotations preserved. Review
+the cut, score, and draw operations before sending the design to Cricut Design Space. SVG import
+may assign vectors to cut operations; inspect and set the intended operations in Design Space.
+
+The current output retains glue tabs intact. Tab trimming is not implemented because the
+converter handoff does not yet distinguish tab geometry from the visible piece body.

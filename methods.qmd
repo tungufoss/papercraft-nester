@@ -1,0 +1,42 @@
+---
+title: "Methods"
+subtitle: "How pieces are placed and how to read the result"
+---
+
+## Input model
+
+The converter SVG is the geometric source. The nester reads each editable piece group and treats
+its cut outline as one rigid polygon. Fold lines, labels, piece IDs, and material assignments stay
+attached to that polygon. Hidden source and review layers are ignored. The YAML manifest maps
+source pages to cardstock materials; the inventory JSON describes the physical sheets available
+for each material.
+
+## Placement search
+
+The program searches placements in descending piece-size order. For each piece it tries allowed
+rotations using the configured angular step, then tests candidate positions against the usable
+sheet bounds and the requested gap from already placed polygons. It ranks feasible choices using
+sheet usage and placement quality, then continues through the remaining pieces. A fixed search
+order makes a given input repeatable.
+
+This is a heuristic search over a difficult geometric packing problem. It finds practical layouts
+quickly but does not certify a global minimum in sheet count or tool travel. Finer rotation steps
+can explore more orientations at additional computation cost.
+
+## Inventory and fallback
+
+Every inventory row has a material, width, height, and quantity. The optimizer can use mixed sheet
+sizes for one color and will not create unlimited stock. When it cannot fit all pieces into that
+inventory, it falls back to the source PDF page arrangement as a valid comparison layout. The
+command output identifies this fallback, so it is not mistaken for a successful optimized pack.
+
+## Reported measures
+
+- **Sheet utilization** is the area of placed piece polygons divided by the sheet area.
+- **Estimated inter-piece travel** uses a nearest-neighbor order over piece start points; it is a
+  rough reposition estimate, not a simulated cutter path.
+- **Minimum gap** is the requested clearance between neighboring piece polygons.
+
+The output master is assembled from the original SVG piece groups transformed onto their assigned
+sheet pages. This preserves piece geometry and annotations instead of redrawing the pattern. The
+current mode keeps complete outlines apart and does not trim glue tabs.

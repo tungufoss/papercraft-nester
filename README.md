@@ -2,6 +2,8 @@
 
 A separate optimizer for the SVG and manifest produced by [`lowpoly-pdf-to-svg`](https://github.com/tungufoss/lowpoly-pdf-to-svg). It does not embed that tool: run both from a models repository that holds the two as submodules (for example `tools/lowpoly-pdf-to-svg` and `tools/papercraft-nester`) next to `data/<model>/`. It nests complete labeled pieces onto finite cardstock inventory and exports one project-wide SVG master with an Inkscape page per physical sheet.
 
+The [project site](https://tungufoss.github.io/papercraft-nester/) has a step-by-step [guide](https://tungufoss.github.io/papercraft-nester/guide.html) and [methods](https://tungufoss.github.io/papercraft-nester/methods.html), using the same Quarto theme as `lowpoly-pdf-to-svg`.
+
 ## First benchmark
 
 The initial Bowser benchmark uses Letter sheets and the material assignments in `data/bowser/bowser.yaml` of the models repository. It reads only editable piece groups from `bowser.svg`; hidden/source review layers are ignored. Each piece retains its cut outline, mountain folds, valley folds, labels, ID, and cardstock material together. The source PDF and generated review SVG are intentionally local inputs and are not part of any public repository. Place the PDF at the manifest's configured path and run the converter's `make` target before nesting.
