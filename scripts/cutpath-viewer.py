@@ -136,7 +136,7 @@ show(0);
 
 def main(src: Path, dst: Path, stay_down: float = 0.0, solver: str = "heuristic") -> None:
     doc, router = ExportFile(src), make_router(solver, 10.0)
-    sheets = [sheet_data(s.plan(router, 0.35, stay_down)) for s in sorted(doc.sheets.values(), key=lambda s: s.page)]
+    sheets = [sheet_data(s.plan(router, 0.35, stay_down)) for s in sorted(doc.sheets.values(), key=lambda s: (s.page, s.material))]
     page = PAGE.replace("__DATA__", json.dumps(sheets, separators=(",", ":"))).replace("__PASSES__", json.dumps(PASSES))
     page = page.replace("__LEAFLET_CSS__", (VENDOR / "leaflet.css").read_text(encoding="utf-8"))
     dst.write_text(page.replace("__LEAFLET_JS__", (VENDOR / "leaflet.js").read_text(encoding="utf-8")), encoding="utf-8")

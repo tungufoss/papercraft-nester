@@ -29,7 +29,7 @@ def moves(lines_per_job, home):
 
 def main(src: Path, dst: Path, page: int | None = None) -> None:
     doc = ExportFile(src)
-    sheet = doc.sheets[page] if page else min(doc.sheets.values(), key=lambda s: s.page)
+    sheet = min((s for s in doc.sheets.values() if page in (None, s.page)), key=lambda s: (s.page, s.material))
     sheet.plan(HeuristicRouter(), 0.35)
     home = sheet.origin
     pts = [p for piece in sheet.pieces for p in piece.rings[0]] + [home]

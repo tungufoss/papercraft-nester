@@ -318,7 +318,7 @@ class ExportFile:
     def _add(self, g):
         page = int(g.get("data-source-page"))
         ox, oy = (float(v) for v in g.get("data-page-origin-mm", "0 0").split())
-        sheet = self.sheets.setdefault(page, Sheet(page, g.get("data-material"), (ox, oy), self.pages.get(page, (215.9, 279.4)),
+        sheet = self.sheets.setdefault((page, g.get("data-material")), Sheet(page, g.get("data-material"), (ox, oy), self.pages.get(page, (215.9, 279.4)),
                                                          colour=g.get("data-color") or "#cccccc"))
         cut = next(e for e in g.iter(f"{{{SVG}}}path") if e.get("data-operation") == "cut")
         folds = {"valley": [], "mountain": []}
@@ -348,14 +348,14 @@ class ExportFile:
         root.set("data-plan", "lowpoly-cutplan/1")
         for view in self.root.iter(f"{{{SODI}}}namedview"):
             root.append(view)
-        sheets = sorted(self.sheets.values(), key=lambda s: s.page)
+        sheets = sorted(self.sheets.values(), key=lambda s: (s.page, s.material))
         for kind, name, colour in PASSES:
             layer = ET.SubElement(root, f"{{{SVG}}}g", {"id": f"layer-{kind}", f"{{{INK}}}groupmode": "layer",
                                                        f"{{{INK}}}label": name,
                                                        "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
             for sheet in sheets:
                 p = next(p for p in sheet.passes if p.kind == kind)
-                group = ET.SubElement(layer, f"{{{SVG}}}g", {"id": f"{kind}-page-{sheet.page:02d}",
+                group = ET.SubElement(layer, f"{{{SVG}}}g", {"id": f"{kind}-page-{sheet.page:02d}-{sheet.material}",
                                                             f"{{{INK}}}label": f"Page {sheet.page:02d} · {sheet.material}",
                                                             "data-source-page": str(sheet.page)})
                 for order, (names, run) in enumerate(p.strokes, 1):
@@ -388,7 +388,7 @@ class ExportFile:
         Design Space imports each as a single layer and follows its subpaths in the planned order."""
         folder.mkdir(parents=True, exist_ok=True)
         out = []
-        for sheet in sorted(self.sheets.values(), key=lambda s: s.page):
+        for sheet in sorted(self.sheets.values(), key=lambda s: (s.page, s.material)):
             (x, y), (w, h) = sheet.origin, sheet.size
             root = ET.Element(f"{{{SVG}}}svg", {"width": f"{w:g}mm", "height": f"{h:g}mm",
                                                 "viewBox": f"{x:g} {y:g} {w:g} {h:g}", "data-plan": "lowpoly-cutplan/1",
@@ -398,7 +398,7 @@ class ExportFile:
                 if not p.strokes:
                     continue
                 ET.SubElement(root, f"{{{SVG}}}path", {
-                    "id": f"{kind}-page-{sheet.page:02d}", f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
+                    "id": f"{kind}-page-{sheet.page:02d}-{sheet.material}", f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
                     "d": path_d([run for _, run in p.strokes]), "data-operation": kind, "data-tool": TOOLS[kind],
                     "style": f"{fill(kind, sheet)};stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
             ET.indent(root)
@@ -411,7 +411,7 @@ class ExportFile:
         """One SVG for one Cricut upload: every sheet laid out side by side (one row per cardstock
         colour), each sheet as up to four ungrouped compound paths (Cut, Fold valley, Fold mountain,
         Draw) with subpaths in the planned order and outlines open back to their start corner."""
-        sheets = sorted(self.sheets.values(), key=lambda s: s.page)
+        sheets = sorted(self.sheets.values(), key=lambda s: (s.page, s.material))
         rows: dict[str, list[Sheet]] = {}
         for sheet in sheets:
             rows.setdefault(sheet.material, []).append(sheet)
@@ -426,7 +426,7 @@ class ExportFile:
                     if not p.strokes:
                         continue
                     ET.SubElement(root, f"{{{SVG}}}path", {
-                        "id": f"page-{sheet.page:02d}-{kind}",
+                        "id": f"page-{sheet.page:02d}-{sheet.material}-{kind}",
                         f"{{{INK}}}label": f"Page {sheet.page:02d} {material} · {name} ({TOOLS[kind]})",
                         "d": path_d([[(px + dx, py + dy) for px, py in run] for _, run in p.strokes]),
                         "data-source-page": str(sheet.page), "data-material": material,
@@ -450,7 +450,7 @@ class ExportFile:
                  "recut_mm": round(p.recut_length, 1),
                  "saved_offcut_cm2": round(sum(g.area for g in s.waste.saved) / 100, 1) if s.waste else "",
                  "order": " ".join(dict.fromkeys(p.jobs[j].name for j, _ in p.route))}
-                for s in sorted(self.sheets.values(), key=lambda s: s.page) for p in s.passes]
+                for s in sorted(self.sheets.values(), key=lambda s: (s.page, s.material)) for p in s.passes]
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
             writer.writeheader()
@@ -466,7 +466,7 @@ def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.3
          min_width: float = 20.0, min_area: float = 50.0, log=print, sheets: Path | None = None,
          cricut: Path | None = None) -> list[dict]:
     doc = ExportFile(export)
-    for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
+    for sheet in sorted(doc.sheets.values(), key=lambda s: (s.page, s.material)):
         sheet.plan(router, share_tol, stay_down, min_width, min_area)
         log(f"page {sheet.page:02d} {sheet.material:<7} " + " | ".join(
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
