@@ -29,12 +29,9 @@ PASSES = [("cut", "Cut", "#000000"), ("valley", "Fold valley", "#2e8b57"),
           ("mountain", "Fold mountain", "#1f5fbf"), ("draw", "Draw", "#444444")]
 TOOLS = {"cut": "fine-point blade", "valley": "double scoring wheel", "mountain": "single scoring wheel",
          "draw": "pen"}  # Helga's Cricut tool per pass
-OPERATION = {"cut": "Cut", "valley": "Score-valley", "mountain": "Score-mountain", "draw": "Pen"}  # Design Space layer names
-
-
-def layer_id(sheet: "Sheet", kind: str) -> str:
-    """Design Space names an imported layer after its path id: P04-red-Score-valley."""
-    return f"P{sheet.page:02d}-{sheet.material}-{OPERATION[kind]}"
+# Design Space names an imported layer after its id: one group per sheet (P04-red) holding
+# these layers (Helga's names); the same names repeat in every sheet group.
+OPERATION = {"cut": "cut", "valley": "score-valley", "mountain": "score-mountain", "draw": "draw"}
 
 
 def rings(d: str) -> list[list[Point]]:
@@ -404,7 +401,7 @@ class ExportFile:
                 if not p.strokes:
                     continue
                 ET.SubElement(root, f"{{{SVG}}}path", {
-                    "id": layer_id(sheet, kind), f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
+                    "id": OPERATION[kind], f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
                     "d": path_d([run for _, run in p.strokes]), "data-operation": kind, "data-tool": TOOLS[kind],
                     "style": f"{fill(kind, sheet)};stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
             ET.indent(root)
@@ -415,8 +412,9 @@ class ExportFile:
 
     def write_cricut(self, path: Path, gap: float = 20.0) -> None:
         """One SVG for one Cricut upload: every sheet laid out side by side (one row per cardstock
-        colour), each sheet as up to four ungrouped compound paths (Cut, Fold valley, Fold mountain,
-        Draw) with subpaths in the planned order and outlines open back to their start corner."""
+        colour), each sheet a group P04-red of up to four compound paths named cut, score-valley,
+        score-mountain and draw, with subpaths in the planned order and outlines open back to their
+        start corner."""
         sheets = sorted(self.sheets.values(), key=lambda s: (s.page, s.material))
         rows: dict[str, list[Sheet]] = {}
         for sheet in sheets:
@@ -427,12 +425,14 @@ class ExportFile:
             x = 0.0
             for sheet in row:
                 dx, dy = x - sheet.origin[0], y - sheet.origin[1]
+                group = ET.SubElement(root, f"{{{SVG}}}g", {"id": f"P{sheet.page:02d}-{material}",
+                                                           f"{{{INK}}}label": f"Page {sheet.page:02d} {material}"})
                 for kind, name, colour in PASSES:
                     p = next(p for p in sheet.passes if p.kind == kind)
                     if not p.strokes:
                         continue
-                    ET.SubElement(root, f"{{{SVG}}}path", {
-                        "id": layer_id(sheet, kind),
+                    ET.SubElement(group, f"{{{SVG}}}path", {
+                        "id": OPERATION[kind],
                         f"{{{INK}}}label": f"Page {sheet.page:02d} {material} · {name} ({TOOLS[kind]})",
                         "d": path_d([[(px + dx, py + dy) for px, py in run] for _, run in p.strokes]),
                         "data-source-page": str(sheet.page), "data-material": material,
