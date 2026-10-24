@@ -13,7 +13,7 @@ import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
-from shapely.geometry import LineString, Polygon, box
+from shapely.geometry import LineString, Point as ShapelyPoint, Polygon, box
 from shapely.prepared import prep
 from shapely.ops import unary_union
 from .font import text_strokes
@@ -84,6 +84,7 @@ class Pass:
                 if bridge:
                     if len(bridge) > 1 and dist(bridge[0], bridge[-1]) > 1e-9:
                         self.bridges.append(bridge)
+                        waste.commit(bridge)
                     names, run = self.strokes[-1]
                     run.extend(bridge[1:-1] + (line if dist(pos, line[0]) > 1e-9 else line[1:]))
                     if self.jobs[j].name not in names:
@@ -91,6 +92,17 @@ class Pass:
                 else:
                     self.strokes.append(([self.jobs[j].name], list(line)))
                 pos = line[-1]
+
+    @property
+    def recut_length(self) -> float:
+        """Length (mm) the tool would go over a second time; the plan keeps this at 0."""
+        done, total = [], 0.0
+        for _, run in self.strokes:
+            for a, b in zip(run, run[1:]):
+                if dist(a, b) > 1e-9:
+                    total += dist(a, b) - length(trim([a, b], done, 0.05))
+                    done.append((a, b))
+        return total
 
     @property
     def offcut_length(self) -> float:
@@ -165,10 +177,12 @@ class Waste:
     `min_area` cm². Everything else that is not a piece is waste:
     thin strips, notches, sheet edges and small leftovers. The blade may cut through waste but never
     into a saved offcut or a piece, so a move stays blade-down when a path through waste exists that
-    is at most `detour` times the straight move (straight if possible, else around pieces)."""
+    is at most `detour` times the straight move (straight if possible, else around pieces).
+    A path never runs along an outline or an earlier path: away from its two ends it keeps `gap` mm
+    from every piece and from every path already cut, so no line is cut twice."""
 
     def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, min_width: float = 20.0,
-                 min_area: float = 50.0, detour: float = 1.5, margin: float = 0.15):
+                 min_area: float = 50.0, detour: float = 1.5, margin: float = 0.15, gap: float = 0.3):
         pieces = unary_union([Polygon(r).buffer(0) for r in rings])
         closed = pieces.buffer(strip / 2).buffer(-strip / 2)
         rest = sheet.difference(closed)
@@ -184,21 +198,31 @@ class Waste:
                 taken = taken.union(part)
         self.region = sheet.difference(unary_union(self.saved)).buffer(1e-6) if self.saved else sheet.buffer(1e-6)
         self.core = pieces.buffer(-margin)  # a move may touch an outline, never enter a piece
-        self._region, self._core = prep(self.region), prep(self.core)
-        free = self.region.difference(pieces).simplify(0.2)
+        self.gap, self.keepout, self.cut = gap, pieces.buffer(gap), Polygon()
+        self._region, self._core, self._keepout = prep(self.region), prep(self.core), prep(self.keepout)
+        free = self.region.difference(pieces.buffer(2 * gap)).simplify(0.1)
         self.nodes = [p for g in getattr(free, "geoms", [free]) for ring in [g.exterior, *g.interiors]
                       for p in ring.coords[:-1]]
         self.detour = detour
 
-    def allows(self, a: Point, b: Point) -> bool:
+    def allows(self, a: Point, b: Point, ends: tuple[Point, ...] = ()) -> bool:
+        """Is a -> b a legal blade-down move? `ends` are the path's own end points (on outlines),
+        the only places where it may come close to a piece or an earlier path."""
         if dist(a, b) < 1e-9:
             return True
         move = LineString([a, b])
-        return self._region.covers(move) and not self._core.intersects(move)
+        if not self._region.covers(move) or self._core.intersects(move):
+            return False
+        away = move.difference(unary_union([ShapelyPoint(*e).buffer(4 * self.gap) for e in ends])) if ends else move
+        return away.is_empty or not (self._keepout.intersects(away) or self.cut.intersects(away))
+
+    def commit(self, bridge: list[Point]) -> None:
+        """Remember a path that will be cut, so later paths keep clear of it."""
+        self.cut = self.cut.union(LineString(bridge).buffer(self.gap))
 
     def path(self, a: Point, b: Point) -> list[Point] | None:
         """Shortest blade-down path a -> b through waste (visibility graph), or None."""
-        if self.allows(a, b):
+        if self.allows(a, b, (a, b)):
             return [a, b]
         limit = self.detour * dist(a, b)
         nodes = [a, b] + [p for p in self.nodes if dist(a, p) + dist(p, b) <= limit]
@@ -215,7 +239,7 @@ class Waste:
                 continue
             for v in range(1, len(nodes)):
                 nd = d + dist(nodes[u], nodes[v])
-                if nd < best.get(v, math.inf) and nd + dist(nodes[v], b) <= limit and self.allows(nodes[u], nodes[v]):
+                if nd < best.get(v, math.inf) and nd + dist(nodes[v], b) <= limit and self.allows(nodes[u], nodes[v], (a, b)):
                     best[v], prev[v] = nd, u
                     heapq.heappush(todo, (nd, v))
         return None
@@ -348,6 +372,7 @@ class ExportFile:
                  "travel_source_mm": round(p.source_travel, 1), "travel_mm": round(p.travel, 1),
                  "length_source_mm": round(p.source_length, 1), "length_mm": round(p.length, 1),
                  "lifts": len(p.strokes), "waste_cut_mm": round(p.offcut_length, 1),
+                 "recut_mm": round(p.recut_length, 1),
                  "saved_offcut_cm2": round(sum(g.area for g in s.waste.saved) / 100, 1) if s.waste else "",
                  "order": " ".join(dict.fromkeys(p.jobs[j].name for j, _ in p.route))}
                 for s in sorted(self.sheets.values(), key=lambda s: s.page) for p in s.passes]

@@ -41,6 +41,8 @@ def cutpath(args):
     for kind in ("cut","valley","mountain","draw"):
         sel=[r for r in rows if r["pass"]==kind]
         print(f"{kind:<8} travel {sum(r['travel_source_mm'] for r in sel):.0f} -> {sum(r['travel_mm'] for r in sel):.0f} mm, length {sum(r['length_source_mm'] for r in sel):.0f} -> {sum(r['length_mm'] for r in sel):.0f} mm, {sum(r['lifts'] for r in sel)} lifts, {sum(r['waste_cut_mm'] for r in sel):.0f} mm cut through waste")
+    recut=[r for r in rows if r["recut_mm"]>0]
+    for r in recut:print(f"warning: page {r['page']} {r['pass']} goes over {r['recut_mm']} mm twice")
     print(f"Solver: {router.name} | plan SVG: {args.output.resolve()} | table: {table.resolve()}")
     return 0
 
