@@ -12,6 +12,8 @@ import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
+from shapely.geometry import LineString, Polygon
+from shapely.ops import unary_union
 from .font import text_strokes
 from .route import Job, Point, dist, travel
 
@@ -64,13 +66,13 @@ class Pass:
     length: float
     strokes: list[tuple[list[str], list[Point]]] = field(default_factory=list)  # tool-down runs
 
-    def join(self, rings: list[list[Point]], stay_down: float, home: Point) -> None:
-        """Tool-down runs: consecutive polylines are joined when the move between them is at most
-        `stay_down` mm and stays in the offcut (a thin strip between pieces, never across one)."""
+    def join(self, waste: "Waste | None", home: Point) -> None:
+        """Tool-down runs: consecutive polylines are joined when the move between them runs only
+        through waste paper (see Waste); without a Waste every move lifts."""
         self.strokes, pos = [], home
         for (j, _), lines in zip(self.route, self.lines):
             for line in lines:
-                if self.strokes and dist(pos, line[0]) <= stay_down and offcut(pos, line[0], rings):
+                if self.strokes and waste and waste.allows(pos, line[0]):
                     names, run = self.strokes[-1]
                     run.extend(line if dist(pos, line[0]) > 1e-9 else line[1:])
                     if self.jobs[j].name not in names:
@@ -92,6 +94,7 @@ class Sheet:
     origin: Point
     pieces: list[Piece] = field(default_factory=list)
     passes: list[Pass] = field(default_factory=list)
+    waste: "Waste | None" = None
 
     def plan(self, router, share_tol: float, stay_down: float = 0.0) -> "Sheet":
         home = self.origin
@@ -102,9 +105,9 @@ class Sheet:
             self.passes.append(self._simple_pass(kind, jobs, router.solve(jobs, home), home))
         jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
-        outlines = [p.rings[0] for p in self.pieces]
+        self.waste = Waste([p.rings[0] for p in self.pieces], stay_down) if stay_down > 0 else None
         for p in self.passes:
-            p.join(outlines, stay_down if p.kind == "cut" else 0.0, home)  # folds and labels always lift
+            p.join(self.waste if p.kind == "cut" else None, home)  # folds and labels always lift
         return self
 
     def _cut_pass(self, jobs, route, home, tol):
@@ -139,26 +142,25 @@ def path_travel(drawn: list[list[list[Point]]], home: Point) -> float:
     return total
 
 
-def inside(p: Point, ring: list[Point]) -> bool:
-    x, y, odd = p[0], p[1], False
-    for (x1, y1), (x2, y2) in zip(ring[-1:] + ring[:-1], ring):
-        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
-            odd = not odd
-    return odd
+class Waste:
+    """Paper between the pieces that is thrown away: the pieces closed over every gap or notch
+    narrower than `strip` mm (dilate, then erode), minus the pieces. Everything outside it is
+    clean offcut kept for reuse, so the blade may cut through waste but never through clean paper."""
 
+    def __init__(self, rings: list[list[Point]], strip: float, margin: float = 0.15):
+        pieces = unary_union([Polygon(r).buffer(0) for r in rings])
+        self.region = pieces.buffer(strip / 2).buffer(-strip / 2).buffer(1e-6)
+        self.core = pieces.buffer(-margin)  # a move may touch an outline, never enter a piece
 
-def offcut(a: Point, b: Point, rings: list[list[Point]], step: float = 0.2, margin: float = 0.15) -> bool:
-    """True when the straight move a->b runs only through paper outside every piece, keeping
-    `margin` mm from all outlines except near its two ends (which sit on outlines)."""
-    L = dist(a, b)
-    for i in range(1, max(2, int(L / step))):
-        t = i / max(2, int(L / step))
-        p = (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
-        if any(inside(p, r) for r in rings):
-            return False
-        if min(t, 1 - t) * L > 2 * margin and any(line_gap(p, r[k - 1], r[k]) < margin for r in rings for k in range(len(r))):
-            return False
-    return True
+    def allows(self, a: Point, b: Point) -> bool:
+        if dist(a, b) < 1e-9:
+            return True
+        move = LineString([a, b])
+        return self.region.covers(move) and not move.intersects(self.core)
+
+    def outline(self) -> list[list[Point]]:
+        polys = getattr(self.region, "geoms", [self.region])
+        return [list(ring.coords) for poly in polys for ring in [poly.exterior, *poly.interiors]]
 
 
 def trim(loop: list[Point], done: list[tuple[Point, Point]], tol: float) -> list[list[Point]]:
@@ -271,6 +273,10 @@ class ExportFile:
                     ET.SubElement(review, f"{{{SVG}}}path", {
                         "d": path_d(moves), "data-source-page": str(sheet.page), "data-operation": f"{p.kind}-travel",
                         "style": "fill:none;stroke:#e040fb;stroke-width:0.15;stroke-dasharray:1,1"})
+            if sheet.waste:
+                ET.SubElement(review, f"{{{SVG}}}path", {
+                    "d": path_d(sheet.waste.outline()), "data-source-page": str(sheet.page), "data-operation": "waste",
+                    "style": "fill:none;stroke:#f59f00;stroke-width:0.2"})
         ET.indent(root)
         ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
