@@ -27,11 +27,11 @@ ET.register_namespace("sodipodi", SODI)
 NUM = r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?"
 PASSES = [("cut", "Cut", "#000000"), ("valley", "Fold valley", "#2e8b57"),
           ("mountain", "Fold mountain", "#1f5fbf"), ("draw", "Draw", "#444444")]
-TOOLS = {"cut": "fine-point blade", "valley": "double scoring wheel", "mountain": "single scoring wheel",
+TOOLS = {"cut": "fine-point blade", "valley": "debossing tip", "mountain": "double scoring wheel",
          "draw": "pen"}  # Helga's Cricut tool per pass
 # Design Space names an imported layer after its id: one group per sheet (P04-red) holding
 # these layers (Helga's names); the same names repeat in every sheet group.
-OPERATION = {"cut": "cut", "valley": "score-valley", "mountain": "score-mountain", "draw": "draw"}
+OPERATION = {"cut": "cut", "valley": "deboss-valley", "mountain": "score-mountain", "draw": "draw"}
 
 
 def rings(d: str) -> list[list[Point]]:
@@ -412,7 +412,7 @@ class ExportFile:
 
     def write_cricut(self, path: Path, gap: float = 20.0) -> None:
         """One SVG for one Cricut upload: every sheet laid out side by side (one row per cardstock
-        colour), each sheet a group P04-red of up to four compound paths named cut, score-valley,
+        colour), each sheet a group P04-red of up to four compound paths named cut, deboss-valley,
         score-mountain and draw, with subpaths in the planned order and outlines open back to their
         start corner."""
         sheets = sorted(self.sheets.values(), key=lambda s: (s.page, s.material))
