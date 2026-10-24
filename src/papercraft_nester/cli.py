@@ -27,7 +27,7 @@ def build_parser():
     cmd.add_argument("--time-limit",type=float,default=10.0,help="Gurobi seconds per pass and sheet")
     cmd.add_argument("--stay-down",type=float,nargs="?",const=10.0,default=0.0,metavar="STRIP",help="keep cutting (not folds) through waste paper: strips and notches narrower than STRIP mm between pieces (bare flag: 10); clean offcut is never cut (default: always lift)")
     cmd.add_argument("--min-width",type=float,default=20.0,help="with --stay-down: a saved offcut is at least this wide everywhere, mm")
-    cmd.add_argument("--min-area",type=float,default=25.0,help="with --stay-down: smallest offcut to save, cm2")
+    cmd.add_argument("--min-area",type=float,default=50.0,help="with --stay-down: smallest offcut to save, cm2")
     cmd.add_argument("--detour",type=float,default=1.5,help="with --stay-down: a blade-down path through waste may be this many times the straight move")
     cmd.add_argument("--share-tol",type=float,default=0.35,help="mm: a neighbour's edge this close is cut once")
     return parser
