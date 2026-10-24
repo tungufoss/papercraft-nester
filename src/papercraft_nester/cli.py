@@ -24,6 +24,7 @@ def build_parser():
     cmd.add_argument("--output",type=Path,required=True,help="output SVG with Cut, Fold valley, Fold mountain, Draw layers")
     cmd.add_argument("--table",type=Path,help="per-sheet CSV report (default: OUTPUT with .csv)")
     cmd.add_argument("--cricut",type=Path,help="one SVG for one Cricut upload, all sheets side by side (default: OUTPUT-cricut.svg)")
+    cmd.add_argument("--log",type=Path,help="copy of the console output, written as it runs (default: OUTPUT with .log)")
     cmd.add_argument("--sheets",type=Path,help="folder for one SVG per sheet, ready for Cricut import (default: OUTPUT-sheets/)")
     cmd.add_argument("--solver",choices=["auto","gurobi","heuristic"],default="auto",help="auto uses Gurobi when gurobipy is installed")
     cmd.add_argument("--time-limit",type=float,default=10.0,help="Gurobi seconds per pass and sheet")
@@ -33,7 +34,28 @@ def build_parser():
     cmd.add_argument("--share-tol",type=float,default=0.35,help="mm: a neighbour's edge this close is cut once")
     return parser
 
+class Tee:
+    """Writes to the console and to a log file, flushing each line so the log can be watched."""
+    def __init__(self,console,log):
+        self.console,self.log=console,log
+    def write(self,text):
+        self.console.write(text);self.log.write(text);self.log.flush()
+        return len(text)
+    def flush(self):
+        self.console.flush();self.log.flush()
+
 def cutpath(args):
+    log=args.log or args.output.with_suffix(".log")
+    log.parent.mkdir(parents=True,exist_ok=True)
+    console=sys.stdout
+    with log.open("w",encoding="utf-8") as handle:
+        sys.stdout=Tee(console,handle)
+        try:
+            return _cutpath(args)
+        finally:
+            sys.stdout=console
+
+def _cutpath(args):
     from .cutpath import plan
     from .route import make_router
     router=make_router(args.solver,args.time_limit)
