@@ -22,6 +22,16 @@ Alternatively, run `python -m papercraft_nester.cli nest ...` with `PYTHONPATH=s
 
 The optimizer reports source sheet counts, packed sheet counts, utilization, and estimated reposition distance. The first version uses deterministic polygon placement heuristics; it is not a proof of globally optimal nesting. It supports rigid rotation with configurable angular search resolution and keeps complete piece outlines apart in its initial mode.
 
+## Cut path per sheet
+
+`papercraft-nester cutpath` orders the tool paths on each sheet of the converter's `<model>-export.svg`, leaving every piece where it is (no nesting). Each sheet (source page) is solved on its own, in four passes: **Cut** (a piece is always cut in one go; an edge within `--share-tol` of one a neighbour already cut is skipped), **Fold valley** and **Fold mountain** (separate passes, each fold line in either direction) and **Draw** (the short glue labels as single-stroke pen paths). It reads only the export SVG, so it works whatever state the glue pairs or 3D fold are in.
+
+```text
+papercraft-nester cutpath --svg ../../data/bowser/bowser-export.svg --output ../../data/bowser/bowser-cutplan.svg
+```
+
+The output keeps the export's inch size and pages and has one Inkscape layer per pass plus a hidden Review layer drawing the lifted moves; `bowser-cutplan.csv` lists travel and cut length per sheet and pass, before and after. The solver is a generalised TSP: Gurobi when `gurobipy` is installed (exact, warm-started, `--time-limit` seconds per pass and sheet), otherwise nearest neighbour + 2-opt with an exact choice of start points. The pip size-limited Gurobi licence only fits the smallest sheets and falls back to the heuristic on the rest. Cricut Design Space may re-sort cuts on import.
+
 ## Glue tabs and protected piece bodies
 
 Low-poly papercraft pieces have glue tabs that are hidden in the assembled model. Those tabs may be trimmed when nesting requires it, but the visible main body must remain intact. A future tab-aware mode will need the converter to label body and tab geometry separately, preserve a configurable safety margin around the body (about 2–3 mm to start), and trim only tab cut paths where needed to prevent cut paths from overlapping. The current converter handoff does not yet carry that distinction, so tab trimming is not enabled.

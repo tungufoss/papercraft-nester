@@ -19,10 +19,33 @@ def build_parser():
     cmd.add_argument("--gap-mm",type=float,help="override the inventory minimum piece gap")
     cmd.add_argument("--rotation-step",type=float,help="override angular search resolution in degrees")
     cmd.add_argument("--source-baseline",action="store_true",help="keep the source PDF sheet placement as a comparison baseline")
+    cmd=sub.add_parser("cutpath",help="order cut, fold and pen paths per sheet without moving pieces")
+    cmd.add_argument("--svg",type=Path,required=True,help="converter export SVG (lowpoly-export/1)")
+    cmd.add_argument("--output",type=Path,required=True,help="output SVG with Cut, Fold valley, Fold mountain, Draw layers")
+    cmd.add_argument("--table",type=Path,help="per-sheet CSV report (default: OUTPUT with .csv)")
+    cmd.add_argument("--solver",choices=["auto","gurobi","heuristic"],default="auto",help="auto uses Gurobi when gurobipy is installed")
+    cmd.add_argument("--time-limit",type=float,default=10.0,help="Gurobi seconds per pass and sheet")
+    cmd.add_argument("--share-tol",type=float,default=0.35,help="mm: a neighbour's edge this close is cut once")
     return parser
+
+def cutpath(args):
+    from .cutpath import plan
+    from .route import make_router
+    router=make_router(args.solver,args.time_limit)
+    table=args.table or args.output.with_suffix(".csv")
+    rows=plan(args.svg,args.output,table,router,args.share_tol)
+    for kind in ("cut","valley","mountain","draw"):
+        sel=[r for r in rows if r["pass"]==kind]
+        print(f"{kind:<8} travel {sum(r['travel_source_mm'] for r in sel):.0f} -> {sum(r['travel_mm'] for r in sel):.0f} mm, length {sum(r['length_source_mm'] for r in sel):.0f} -> {sum(r['length_mm'] for r in sel):.0f} mm")
+    print(f"Solver: {router.name} | plan SVG: {args.output.resolve()} | table: {table.resolve()}")
+    return 0
 
 def main(argv=None):
     args=build_parser().parse_args(argv)
+    if args.command=="cutpath":
+        try:return cutpath(args)
+        except (OSError,ValueError) as exc:
+            print(f"papercraft-nester: error: {exc}",file=sys.stderr);return 2
     try:
         pieces,source_colors=load_pieces(args.svg,args.manifest)
         page_map=load_material_pages(args.manifest)
