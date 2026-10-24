@@ -7,12 +7,14 @@ are skipped), Fold valley and Fold mountain (one job per fold line, either direc
 """
 from __future__ import annotations
 import csv
+import heapq
 import math
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, Polygon, box
+from shapely.prepared import prep
 from shapely.ops import unary_union
 from .font import text_strokes
 from .route import Job, Point, dist, travel
@@ -68,13 +70,19 @@ class Pass:
 
     def join(self, waste: "Waste | None", home: Point) -> None:
         """Tool-down runs: consecutive polylines are joined when the move between them runs only
-        through waste paper (see Waste); without a Waste every move lifts."""
+        through waste paper (see Waste.path); without a Waste every move lifts."""
         self.strokes, pos = [], home
         for (j, _), lines in zip(self.route, self.lines):
             for line in lines:
-                if self.strokes and waste and waste.allows(pos, line[0]):
+                if not self.strokes:
+                    bridge = None
+                elif dist(pos, line[0]) < 1e-9:
+                    bridge = [pos, pos]  # the next line starts where this one ends: no move at all
+                else:
+                    bridge = waste.path(pos, line[0]) if waste else None
+                if bridge:
                     names, run = self.strokes[-1]
-                    run.extend(line if dist(pos, line[0]) > 1e-9 else line[1:])
+                    run.extend(bridge[1:-1] + (line if dist(pos, line[0]) > 1e-9 else line[1:]))
                     if self.jobs[j].name not in names:
                         names.append(self.jobs[j].name)
                 else:
@@ -92,11 +100,13 @@ class Sheet:
     page: int
     material: str
     origin: Point
+    size: Point = (0.0, 0.0)
     pieces: list[Piece] = field(default_factory=list)
     passes: list[Pass] = field(default_factory=list)
     waste: "Waste | None" = None
 
-    def plan(self, router, share_tol: float, stay_down: float = 0.0) -> "Sheet":
+    def plan(self, router, share_tol: float, stay_down: float = 0.0, keep: float = 30.0,
+             detour: float = 1.5) -> "Sheet":
         home = self.origin
         cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
         self.passes = [self._cut_pass(cut, router.solve(cut, home), home, share_tol)]
@@ -105,7 +115,9 @@ class Sheet:
             self.passes.append(self._simple_pass(kind, jobs, router.solve(jobs, home), home))
         jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
-        self.waste = Waste([p.rings[0] for p in self.pieces], stay_down) if stay_down > 0 else None
+        sheet = box(self.origin[0], self.origin[1], self.origin[0] + self.size[0], self.origin[1] + self.size[1])
+        self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, keep, detour)
+                      if stay_down > 0 else None)
         for p in self.passes:
             p.join(self.waste if p.kind == "cut" else None, home)  # folds and labels always lift
         return self
@@ -143,23 +155,59 @@ def path_travel(drawn: list[list[list[Point]]], home: Point) -> float:
 
 
 class Waste:
-    """Paper between the pieces that is thrown away: the pieces closed over every gap or notch
-    narrower than `strip` mm (dilate, then erode), minus the pieces. Everything outside it is
-    clean offcut kept for reuse, so the blade may cut through waste but never through clean paper."""
+    """Step 2 and 3 of the cut plan, after the shortest lifted route.
 
-    def __init__(self, rings: list[list[Point]], strip: float, margin: float = 0.15):
+    Saved offcuts: the sheet minus the pieces closed over every gap or notch narrower than `strip`
+    mm, keeping only parts a `keep` mm disc fits in. Everything else that is not a piece is waste:
+    thin strips, notches, sheet edges and small leftovers. The blade may cut through waste but never
+    into a saved offcut or a piece, so a move stays blade-down when a path through waste exists that
+    is at most `detour` times the straight move (straight if possible, else around pieces)."""
+
+    def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, keep: float = 30.0,
+                 detour: float = 1.5, margin: float = 0.15):
         pieces = unary_union([Polygon(r).buffer(0) for r in rings])
-        self.region = pieces.buffer(strip / 2).buffer(-strip / 2).buffer(1e-6)
+        closed = pieces.buffer(strip / 2).buffer(-strip / 2)
+        rest = sheet.difference(closed)
+        self.saved = [g for g in getattr(rest, "geoms", [rest]) if not g.buffer(-keep / 2).is_empty]
+        self.region = sheet.difference(unary_union(self.saved)).buffer(1e-6) if self.saved else sheet.buffer(1e-6)
         self.core = pieces.buffer(-margin)  # a move may touch an outline, never enter a piece
+        self._region, self._core = prep(self.region), prep(self.core)
+        free = self.region.difference(pieces).simplify(0.2)
+        self.nodes = [p for g in getattr(free, "geoms", [free]) for ring in [g.exterior, *g.interiors]
+                      for p in ring.coords[:-1]]
+        self.detour = detour
 
     def allows(self, a: Point, b: Point) -> bool:
         if dist(a, b) < 1e-9:
             return True
         move = LineString([a, b])
-        return self.region.covers(move) and not move.intersects(self.core)
+        return self._region.covers(move) and not self._core.intersects(move)
 
-    def outline(self) -> list[list[Point]]:
-        polys = getattr(self.region, "geoms", [self.region])
+    def path(self, a: Point, b: Point) -> list[Point] | None:
+        """Shortest blade-down path a -> b through waste (visibility graph), or None."""
+        if self.allows(a, b):
+            return [a, b]
+        limit = self.detour * dist(a, b)
+        nodes = [a, b] + [p for p in self.nodes if dist(a, p) + dist(p, b) <= limit]
+        best, prev, todo = {0: 0.0}, {}, [(0.0, 0)]
+        while todo:
+            d, u = heapq.heappop(todo)
+            if u == 1:
+                out = [b]
+                while u in prev:
+                    u = prev[u]
+                    out.append(nodes[u])
+                return out[::-1]
+            if d > best.get(u, math.inf):
+                continue
+            for v in range(1, len(nodes)):
+                nd = d + dist(nodes[u], nodes[v])
+                if nd < best.get(v, math.inf) and nd + dist(nodes[v], b) <= limit and self.allows(nodes[u], nodes[v]):
+                    best[v], prev[v] = nd, u
+                    heapq.heappush(todo, (nd, v))
+        return None
+
+    def outline(self, polys) -> list[list[Point]]:
         return [list(ring.coords) for poly in polys for ring in [poly.exterior, *poly.interiors]]
 
 
@@ -215,6 +263,8 @@ class ExportFile:
         if root.get("data-contract") != "lowpoly-export/1":
             raise ValueError(f"{path}: not a lowpoly-export/1 file")
         self.root, self.sheets = root, {}
+        self.pages = {int(re.search(r"(\d+)$", e.get("id")).group(1)): (float(e.get("width")), float(e.get("height")))
+                      for e in root.iter(f"{{{INK}}}page") if re.search(r"\d+$", e.get("id", ""))}
         for g in root.iter(f"{{{SVG}}}g"):
             if g.get("data-piece"):
                 self._add(g)
@@ -224,7 +274,7 @@ class ExportFile:
     def _add(self, g):
         page = int(g.get("data-source-page"))
         ox, oy = (float(v) for v in g.get("data-page-origin-mm", "0 0").split())
-        sheet = self.sheets.setdefault(page, Sheet(page, g.get("data-material"), (ox, oy)))
+        sheet = self.sheets.setdefault(page, Sheet(page, g.get("data-material"), (ox, oy), self.pages.get(page, (215.9, 279.4))))
         cut = next(e for e in g.iter(f"{{{SVG}}}path") if e.get("data-operation") == "cut")
         folds = {"valley": [], "mountain": []}
         for e in g.iter(f"{{{SVG}}}path"):
@@ -273,10 +323,10 @@ class ExportFile:
                     ET.SubElement(review, f"{{{SVG}}}path", {
                         "d": path_d(moves), "data-source-page": str(sheet.page), "data-operation": f"{p.kind}-travel",
                         "style": "fill:none;stroke:#e040fb;stroke-width:0.15;stroke-dasharray:1,1"})
-            if sheet.waste:
+            if sheet.waste and sheet.waste.saved:
                 ET.SubElement(review, f"{{{SVG}}}path", {
-                    "d": path_d(sheet.waste.outline()), "data-source-page": str(sheet.page), "data-operation": "waste",
-                    "style": "fill:none;stroke:#f59f00;stroke-width:0.2"})
+                    "d": path_d(sheet.waste.outline(sheet.waste.saved)) + " Z", "data-source-page": str(sheet.page),
+                    "data-operation": "saved-offcut", "style": "fill:#40c057;fill-opacity:0.15;stroke:#2b8a3e;stroke-width:0.2"})
         ET.indent(root)
         ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
@@ -284,7 +334,8 @@ class ExportFile:
         rows = [{"page": s.page, "material": s.material, "pass": p.kind, "jobs": len(p.jobs),
                  "travel_source_mm": round(p.source_travel, 1), "travel_mm": round(p.travel, 1),
                  "length_source_mm": round(p.source_length, 1), "length_mm": round(p.length, 1),
-                 "lifts": len(p.strokes), "offcut_mm": round(p.offcut_length, 1),
+                 "lifts": len(p.strokes), "waste_cut_mm": round(p.offcut_length, 1),
+                 "saved_offcut_cm2": round(sum(g.area for g in s.waste.saved) / 100, 1) if s.waste else "",
                  "order": " ".join(dict.fromkeys(p.jobs[j].name for j, _ in p.route))}
                 for s in sorted(self.sheets.values(), key=lambda s: s.page) for p in s.passes]
         with path.open("w", newline="", encoding="utf-8") as handle:
@@ -299,10 +350,10 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         log=print) -> list[dict]:
+         keep: float = 30.0, detour: float = 1.5, log=print) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
-        sheet.plan(router, share_tol, stay_down)
+        sheet.plan(router, share_tol, stay_down, keep, detour)
         log(f"page {sheet.page:02d} {sheet.material:<7} " + " | ".join(
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -91,14 +91,19 @@ Regenerate the figure with
 `PYTHONPATH=src python scripts/cutpath-figure.py examples/example-export.svg img/cutpath-example.svg`
 (`examples/example-export.svg` is the converter's synthetic example model).
 
-**Cutting through waste.** Thin strips and notches between pieces are waste; the large paper
-around the pieces is clean offcut you can reuse. With `--stay-down` (strips up to 10 mm wide, or
-`--stay-down 6` for another width) the pieces are closed over every gap narrower than that width,
-and the blade keeps cutting instead of lifting when the move to the next outline runs only
-through that waste (0.15 mm clear of every piece). Clean offcut is never cut, and folds and labels
-always lift. The waste boundary is drawn in the hidden Review layer. Joined outlines become one
-path, so in Inkscape such a path covers several pieces (`data-piece` lists them). On Bowser,
-10 mm saves 12 of 178 cut lifts and 20 mm saves 35; most moves between pieces cross another piece.
+**Cutting through waste.** `--stay-down` adds two steps after the shortest route:
+
+1. *Offcuts to save.* The pieces are closed over every gap or notch narrower than the strip width
+   (10 mm, or `--stay-down 6`). What is left of the sheet is kept as clean offcut where a
+   `--keep` (30 mm) disc fits; thin strips, notches and small leftovers are waste.
+2. *Travel through waste.* Each move between two outlines stays blade-down when a path through
+   waste exists that is at most `--detour` (1.5) times the straight move, going around pieces
+   if needed (shortest path on a visibility graph). It never enters a piece or a saved offcut.
+
+Folds and labels always lift (lines that touch end to end are still scored in one stroke). The
+saved offcuts are shaded in the hidden Review layer and their area is in the CSV. Joined outlines
+become one path, so in Inkscape such a path covers several pieces (`data-piece` lists them). On
+Bowser this takes the cut lifts from 178 to 120, cutting 1.8 m through waste.
 
 **Shared edges.** An edge that lies within `--share-tol` (default 0.35 mm) of an edge a neighbour
 already cut is cut only once. Keep this tolerance at the blade's precision: a larger value would
