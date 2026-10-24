@@ -7,7 +7,6 @@ are skipped), Fold valley and Fold mountain (one job per fold line, either direc
 """
 from __future__ import annotations
 import csv
-import heapq
 import math
 import re
 import xml.etree.ElementTree as ET
@@ -121,7 +120,7 @@ class Sheet:
     waste: "Waste | None" = None
 
     def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 20.0,
-             min_area: float = 50.0, detour: float = 1.5) -> "Sheet":
+             min_area: float = 50.0) -> "Sheet":
         home = self.origin
         cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
         self.passes = [self._cut_pass(cut, router.solve(cut, home), home, share_tol)]
@@ -131,7 +130,7 @@ class Sheet:
         jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
         sheet = box(self.origin[0], self.origin[1], self.origin[0] + self.size[0], self.origin[1] + self.size[1])
-        self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, min_width, min_area, detour)
+        self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, min_width, min_area)
                       if stay_down > 0 else None)
         for p in self.passes:
             p.join(self.waste if p.kind == "cut" else None, home)  # folds and labels always lift
@@ -176,13 +175,12 @@ class Waste:
     mm, with every part narrower than `min_width` mm shaved off, keeping pieces of at least
     `min_area` cm². Everything else that is not a piece is waste:
     thin strips, notches, sheet edges and small leftovers. The blade may cut through waste but never
-    into a saved offcut or a piece, so a move stays blade-down when a path through waste exists that
-    is at most `detour` times the straight move (straight if possible, else around pieces).
-    A path never runs along an outline or an earlier path: away from its two ends it keeps `gap` mm
-    from every piece and from every path already cut, so no line is cut twice."""
+    into a saved offcut or a piece, so a move stays blade-down only when the straight move lies in
+    waste. It never runs along an outline or an earlier move: away from its two ends it keeps `gap`
+    mm from every piece and from every move already cut, so no line is cut twice."""
 
     def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, min_width: float = 20.0,
-                 min_area: float = 50.0, detour: float = 1.5, margin: float = 0.15, gap: float = 0.3):
+                 min_area: float = 50.0, margin: float = 0.15, gap: float = 0.3):
         pieces = unary_union([Polygon(r).buffer(0) for r in rings])
         closed = pieces.buffer(strip / 2).buffer(-strip / 2)
         rest = sheet.difference(closed)
@@ -200,10 +198,6 @@ class Waste:
         self.core = pieces.buffer(-margin)  # a move may touch an outline, never enter a piece
         self.gap, self.keepout, self.cut = gap, pieces.buffer(gap), Polygon()
         self._region, self._core, self._keepout = prep(self.region), prep(self.core), prep(self.keepout)
-        free = self.region.difference(pieces.buffer(2 * gap)).simplify(0.1)
-        self.nodes = [p for g in getattr(free, "geoms", [free]) for ring in [g.exterior, *g.interiors]
-                      for p in ring.coords[:-1]]
-        self.detour = detour
 
     def allows(self, a: Point, b: Point, ends: tuple[Point, ...] = ()) -> bool:
         """Is a -> b a legal blade-down move? `ends` are the path's own end points (on outlines),
@@ -221,28 +215,9 @@ class Waste:
         self.cut = self.cut.union(LineString(bridge).buffer(self.gap))
 
     def path(self, a: Point, b: Point) -> list[Point] | None:
-        """Shortest blade-down path a -> b through waste (visibility graph), or None."""
-        if self.allows(a, b, (a, b)):
-            return [a, b]
-        limit = self.detour * dist(a, b)
-        nodes = [a, b] + [p for p in self.nodes if dist(a, p) + dist(p, b) <= limit]
-        best, prev, todo = {0: 0.0}, {}, [(0.0, 0)]
-        while todo:
-            d, u = heapq.heappop(todo)
-            if u == 1:
-                out = [b]
-                while u in prev:
-                    u = prev[u]
-                    out.append(nodes[u])
-                return out[::-1]
-            if d > best.get(u, math.inf):
-                continue
-            for v in range(1, len(nodes)):
-                nd = d + dist(nodes[u], nodes[v])
-                if nd < best.get(v, math.inf) and nd + dist(nodes[v], b) <= limit and self.allows(nodes[u], nodes[v], (a, b)):
-                    best[v], prev[v] = nd, u
-                    heapq.heappush(todo, (nd, v))
-        return None
+        """One straight blade-down cut a -> b through waste, or None (then the tool lifts:
+        a detour through waste would cost more than the lift it saves)."""
+        return [a, b] if self.allows(a, b, (a, b)) else None
 
     def outline(self, polys) -> list[list[Point]]:
         return [list(ring.coords) for poly in polys for ring in [poly.exterior, *poly.interiors]]
@@ -388,10 +363,10 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         min_width: float = 20.0, min_area: float = 50.0, detour: float = 1.5, log=print) -> list[dict]:
+         min_width: float = 20.0, min_area: float = 50.0, log=print) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
-        sheet.plan(router, share_tol, stay_down, min_width, min_area, detour)
+        sheet.plan(router, share_tol, stay_down, min_width, min_area)
         log(f"page {sheet.page:02d} {sheet.material:<7} " + " | ".join(
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
     output.parent.mkdir(parents=True, exist_ok=True)
