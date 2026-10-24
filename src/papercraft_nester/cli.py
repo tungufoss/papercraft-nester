@@ -25,6 +25,7 @@ def build_parser():
     cmd.add_argument("--table",type=Path,help="per-sheet CSV report (default: OUTPUT with .csv)")
     cmd.add_argument("--solver",choices=["auto","gurobi","heuristic"],default="auto",help="auto uses Gurobi when gurobipy is installed")
     cmd.add_argument("--time-limit",type=float,default=10.0,help="Gurobi seconds per pass and sheet")
+    cmd.add_argument("--stay-down",type=float,nargs="?",const=15.0,default=0.0,help="keep cutting/scoring across a thin offcut strip instead of lifting, up to this many mm (bare flag: 15; default: always lift)")
     cmd.add_argument("--share-tol",type=float,default=0.35,help="mm: a neighbour's edge this close is cut once")
     return parser
 
@@ -33,10 +34,10 @@ def cutpath(args):
     from .route import make_router
     router=make_router(args.solver,args.time_limit)
     table=args.table or args.output.with_suffix(".csv")
-    rows=plan(args.svg,args.output,table,router,args.share_tol)
+    rows=plan(args.svg,args.output,table,router,args.share_tol,args.stay_down)
     for kind in ("cut","valley","mountain","draw"):
         sel=[r for r in rows if r["pass"]==kind]
-        print(f"{kind:<8} travel {sum(r['travel_source_mm'] for r in sel):.0f} -> {sum(r['travel_mm'] for r in sel):.0f} mm, length {sum(r['length_source_mm'] for r in sel):.0f} -> {sum(r['length_mm'] for r in sel):.0f} mm")
+        print(f"{kind:<8} travel {sum(r['travel_source_mm'] for r in sel):.0f} -> {sum(r['travel_mm'] for r in sel):.0f} mm, length {sum(r['length_source_mm'] for r in sel):.0f} -> {sum(r['length_mm'] for r in sel):.0f} mm, {sum(r['lifts'] for r in sel)} lifts, {sum(r['offcut_mm'] for r in sel):.0f} mm through offcut")
     print(f"Solver: {router.name} | plan SVG: {args.output.resolve()} | table: {table.resolve()}")
     return 0
 

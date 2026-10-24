@@ -62,6 +62,27 @@ class Pass:
     travel: float
     source_length: float
     length: float
+    strokes: list[tuple[list[str], list[Point]]] = field(default_factory=list)  # tool-down runs
+
+    def join(self, rings: list[list[Point]], stay_down: float, home: Point) -> None:
+        """Tool-down runs: consecutive polylines are joined when the move between them is at most
+        `stay_down` mm and stays in the offcut (a thin strip between pieces, never across one)."""
+        self.strokes, pos = [], home
+        for (j, _), lines in zip(self.route, self.lines):
+            for line in lines:
+                if self.strokes and dist(pos, line[0]) <= stay_down and offcut(pos, line[0], rings):
+                    names, run = self.strokes[-1]
+                    run.extend(line if dist(pos, line[0]) > 1e-9 else line[1:])
+                    if self.jobs[j].name not in names:
+                        names.append(self.jobs[j].name)
+                else:
+                    self.strokes.append(([self.jobs[j].name], list(line)))
+                pos = line[-1]
+
+    @property
+    def offcut_length(self) -> float:
+        inner = sum(length([run]) for _, run in self.strokes)
+        return max(0.0, inner - self.length)
 
 
 @dataclass
@@ -72,7 +93,7 @@ class Sheet:
     pieces: list[Piece] = field(default_factory=list)
     passes: list[Pass] = field(default_factory=list)
 
-    def plan(self, router, share_tol: float) -> "Sheet":
+    def plan(self, router, share_tol: float, stay_down: float = 0.0) -> "Sheet":
         home = self.origin
         cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
         self.passes = [self._cut_pass(cut, router.solve(cut, home), home, share_tol)]
@@ -81,6 +102,9 @@ class Sheet:
             self.passes.append(self._simple_pass(kind, jobs, router.solve(jobs, home), home))
         jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
+        outlines = [p.rings[0] for p in self.pieces]
+        for p in self.passes:
+            p.join(outlines, stay_down if p.kind != "draw" else 0.0, home)
         return self
 
     def _cut_pass(self, jobs, route, home, tol):
@@ -113,6 +137,28 @@ def path_travel(drawn: list[list[list[Point]]], home: Point) -> float:
             total += dist(pos, line[0])
             pos = line[-1]
     return total
+
+
+def inside(p: Point, ring: list[Point]) -> bool:
+    x, y, odd = p[0], p[1], False
+    for (x1, y1), (x2, y2) in zip(ring[-1:] + ring[:-1], ring):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            odd = not odd
+    return odd
+
+
+def offcut(a: Point, b: Point, rings: list[list[Point]], step: float = 0.2, margin: float = 0.15) -> bool:
+    """True when the straight move a->b runs only through paper outside every piece, keeping
+    `margin` mm from all outlines except near its two ends (which sit on outlines)."""
+    L = dist(a, b)
+    for i in range(1, max(2, int(L / step))):
+        t = i / max(2, int(L / step))
+        p = (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
+        if any(inside(p, r) for r in rings):
+            return False
+        if min(t, 1 - t) * L > 2 * margin and any(line_gap(p, r[k - 1], r[k]) < margin for r in rings for k in range(len(r))):
+            return False
+    return True
 
 
 def trim(loop: list[Point], done: list[tuple[Point, Point]], tol: float) -> list[list[Point]]:
@@ -208,10 +254,9 @@ class ExportFile:
                 group = ET.SubElement(layer, f"{{{SVG}}}g", {"id": f"{kind}-page-{sheet.page:02d}",
                                                             f"{{{INK}}}label": f"Page {sheet.page:02d} · {sheet.material}",
                                                             "data-source-page": str(sheet.page)})
-                for order, ((j, _), lines) in enumerate(zip(p.route, p.lines), 1):
-                    if lines:
-                        ET.SubElement(group, f"{{{SVG}}}path", {"d": path_d(lines), "data-piece": p.jobs[j].name,
-                                                                "data-order": str(order), "data-operation": kind})
+                for order, (names, run) in enumerate(p.strokes, 1):
+                    ET.SubElement(group, f"{{{SVG}}}path", {"d": path_d([run]), "data-piece": " ".join(names),
+                                                            "data-order": str(order), "data-operation": kind})
         review = ET.SubElement(root, f"{{{SVG}}}g", {"id": "layer-review", f"{{{INK}}}groupmode": "layer",
                                                     f"{{{INK}}}label": "Review", "style": "display:none"})
         for sheet in sheets:
@@ -233,6 +278,7 @@ class ExportFile:
         rows = [{"page": s.page, "material": s.material, "pass": p.kind, "jobs": len(p.jobs),
                  "travel_source_mm": round(p.source_travel, 1), "travel_mm": round(p.travel, 1),
                  "length_source_mm": round(p.source_length, 1), "length_mm": round(p.length, 1),
+                 "lifts": len(p.strokes), "offcut_mm": round(p.offcut_length, 1),
                  "order": " ".join(dict.fromkeys(p.jobs[j].name for j, _ in p.route))}
                 for s in sorted(self.sheets.values(), key=lambda s: s.page) for p in s.passes]
         with path.open("w", newline="", encoding="utf-8") as handle:
@@ -246,10 +292,11 @@ def path_d(lines: list[list[Point]]) -> str:
     return " ".join("M " + " ".join(f"{x:.3f},{y:.3f}" for x, y in line) for line in lines)
 
 
-def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, log=print) -> list[dict]:
+def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
+         log=print) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
-        sheet.plan(router, share_tol)
+        sheet.plan(router, share_tol, stay_down)
         log(f"page {sheet.page:02d} {sheet.material:<7} " + " | ".join(
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
     output.parent.mkdir(parents=True, exist_ok=True)
