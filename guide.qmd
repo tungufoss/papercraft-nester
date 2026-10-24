@@ -91,6 +91,18 @@ Regenerate the figure with
 `PYTHONPATH=src python scripts/cutpath-figure.py examples/example-export.svg img/cutpath-example.svg`
 (`examples/example-export.svg` is the converter's synthetic example model).
 
+**Interactive map.** Pick a sheet and switch the layers Cut, Fold valley, Fold mountain and Draw
+on or off. Every pass is drawn the same way in its own colour: numbered nodes where the tool goes
+down (0 = sheet corner), arrows along the path, dotted lifted moves, and fold order at each
+fold's midpoint. Green is saved offcut, orange a blade-down cut through waste (`--stay-down`).
+
+```{=html}
+<iframe src="img/cutpath-viewer.html" width="100%" height="640" style="border:1px solid #ccc"
+  title="Cut plan map, example model"></iframe>
+```
+
+Regenerate with `PYTHONPATH=src python scripts/cutpath-viewer.py EXPORT.svg OUT.html --stay-down`.
+
 **Cutting through waste.** `--stay-down` adds two steps after the shortest route:
 
 1. *Offcuts to save.* The pieces are closed over every gap or notch narrower than the strip width
