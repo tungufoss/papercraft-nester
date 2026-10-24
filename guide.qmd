@@ -128,7 +128,7 @@ import, select one sheet's layers and Attach them so Design Space keeps them on 
 **Per-sheet files for Cricut.** Next to the plan, `cutpath` writes one SVG per sheet
 (`<model>-cutplan-sheets/<model>-cutplan-page-NN-<colour>.svg`, or `--sheets DIR`), sized to the sheet.
 Each holds one compound path per tool and no groups, so Design Space imports it as four layers:
-Cut (fine-point blade), Fold valley (double scoring wheel), Fold mountain (single scoring wheel) and
+Cut (fine-point blade), Fold valley (debossing tip), Fold mountain (double scoring wheel) and
 Draw (pen). The subpaths are in the planned order, and each outline starts at its planned corner and
 runs open (no `Z`) back to it.
 
