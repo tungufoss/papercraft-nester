@@ -42,6 +42,22 @@ def rings(d: str) -> list[list[Point]]:
     return out
 
 
+def despike(ring: list[Point], tol: float = 0.2) -> list[Point]:
+    """Drop needle vertices where the outline turns back on itself (out and back along the same
+    line, a trace fault): cutting one would slit into the piece."""
+    pts, changed = list(ring), True
+    while changed and len(pts) > 3:
+        changed = False
+        for i in range(len(pts)):
+            a, b, c = pts[i - 1], pts[i], pts[(i + 1) % len(pts)]
+            if dist(a, b) > 1e-9 and dist(b, c) > 1e-9 and line_gap(c, a, b) < tol and line_gap(a, b, c) < tol \
+                    and (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]) < 0:
+                del pts[i]
+                changed = True
+                break
+    return pts
+
+
 def length(lines: list[list[Point]]) -> float:
     return sum(dist(a, b) for line in lines for a, b in zip(line, line[1:]))
 
@@ -301,7 +317,14 @@ class ExportFile:
             labels.append(text_strokes(t.get("data-label") or (t.text or "").strip(), float(t.get("x")),
                                        float(t.get("y")), float(t.get("font-size", "2")),
                                        float(rot.group(1)) if rot else 0.0))
-        sheet.pieces.append(Piece(g.get("data-piece"), g.get("data-material"), rings(cut.get("d")), folds, labels))
+        outline = []
+        for ring in rings(cut.get("d")):
+            clean = despike(ring)
+            if len(clean) < len(ring):
+                print(f"warning: {g.get('data-piece')} outline turns back on itself; "
+                      f"dropped {len(ring) - len(clean)} needle vertex(es) so the blade does not slit the piece")
+            outline.append(clean)
+        sheet.pieces.append(Piece(g.get("data-piece"), g.get("data-material"), outline, folds, labels))
 
     def write(self, path: Path) -> None:
         root = ET.Element(f"{{{SVG}}}svg", {k: v for k, v in self.root.attrib.items() if k != "data-contract"})
