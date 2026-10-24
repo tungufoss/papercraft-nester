@@ -92,12 +92,12 @@ Regenerate the figure with
 (`examples/example-export.svg` is the converter's synthetic example model).
 
 **Staying down in the offcut.** With `--stay-down` (15 mm, or `--stay-down 8` for another
-limit) the blade or scoring tool keeps going instead of lifting when the next line starts at most
+limit) the blade keeps cutting instead of lifting when the next line starts at most
 that far away and the straight move runs only through offcut, never across a piece (it keeps
 0.15 mm off every outline). The length limit keeps this to thin strips between pieces, so large
 open paper is never cut. The joined lines become one path, so in Inkscape such a path covers
-several pieces (`data-piece` lists them). On Bowser, 15 mm saves 26 of 178 cut lifts and 71 of
-1167 fold lifts, cutting 0.25 m through offcut.
+several pieces (`data-piece` lists them). Folds and labels always lift. On Bowser, 15 mm saves
+26 of 178 cut lifts, cutting 0.25 m through offcut.
 
 **Shared edges.** An edge that lies within `--share-tol` (default 0.35 mm) of an edge a neighbour
 already cut is cut only once. Keep this tolerance at the blade's precision: a larger value would

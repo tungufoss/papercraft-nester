@@ -104,7 +104,7 @@ class Sheet:
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
         outlines = [p.rings[0] for p in self.pieces]
         for p in self.passes:
-            p.join(outlines, stay_down if p.kind != "draw" else 0.0, home)
+            p.join(outlines, stay_down if p.kind == "cut" else 0.0, home)  # folds and labels always lift
         return self
 
     def _cut_pass(self, jobs, route, home, tol):
