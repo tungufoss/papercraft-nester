@@ -67,11 +67,12 @@ class Pass:
     source_length: float
     length: float
     strokes: list[tuple[list[str], list[Point]]] = field(default_factory=list)  # tool-down runs
+    bridges: list[list[Point]] = field(default_factory=list)  # blade-down moves through waste
 
     def join(self, waste: "Waste | None", home: Point) -> None:
         """Tool-down runs: consecutive polylines are joined when the move between them runs only
         through waste paper (see Waste.path); without a Waste every move lifts."""
-        self.strokes, pos = [], home
+        self.strokes, self.bridges, pos = [], [], home
         for (j, _), lines in zip(self.route, self.lines):
             for line in lines:
                 if not self.strokes:
@@ -81,6 +82,8 @@ class Pass:
                 else:
                     bridge = waste.path(pos, line[0]) if waste else None
                 if bridge:
+                    if len(bridge) > 1 and dist(bridge[0], bridge[-1]) > 1e-9:
+                        self.bridges.append(bridge)
                     names, run = self.strokes[-1]
                     run.extend(bridge[1:-1] + (line if dist(pos, line[0]) > 1e-9 else line[1:]))
                     if self.jobs[j].name not in names:
