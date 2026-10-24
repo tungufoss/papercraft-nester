@@ -29,6 +29,12 @@ PASSES = [("cut", "Cut", "#000000"), ("valley", "Fold valley", "#2e8b57"),
           ("mountain", "Fold mountain", "#1f5fbf"), ("draw", "Draw", "#444444")]
 TOOLS = {"cut": "fine-point blade", "valley": "double scoring wheel", "mountain": "single scoring wheel",
          "draw": "pen"}  # Helga's Cricut tool per pass
+OPERATION = {"cut": "Cut", "valley": "Score-valley", "mountain": "Score-mountain", "draw": "Pen"}  # Design Space layer names
+
+
+def layer_id(sheet: "Sheet", kind: str) -> str:
+    """Design Space names an imported layer after its path id: P04-red-Score-valley."""
+    return f"P{sheet.page:02d}-{sheet.material}-{OPERATION[kind]}"
 
 
 def rings(d: str) -> list[list[Point]]:
@@ -398,7 +404,7 @@ class ExportFile:
                 if not p.strokes:
                     continue
                 ET.SubElement(root, f"{{{SVG}}}path", {
-                    "id": f"{kind}-page-{sheet.page:02d}-{sheet.material}", f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
+                    "id": layer_id(sheet, kind), f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
                     "d": path_d([run for _, run in p.strokes]), "data-operation": kind, "data-tool": TOOLS[kind],
                     "style": f"{fill(kind, sheet)};stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
             ET.indent(root)
@@ -426,7 +432,7 @@ class ExportFile:
                     if not p.strokes:
                         continue
                     ET.SubElement(root, f"{{{SVG}}}path", {
-                        "id": f"page-{sheet.page:02d}-{sheet.material}-{kind}",
+                        "id": layer_id(sheet, kind),
                         f"{{{INK}}}label": f"Page {sheet.page:02d} {material} · {name} ({TOOLS[kind]})",
                         "d": path_d([[(px + dx, py + dy) for px, py in run] for _, run in p.strokes]),
                         "data-source-page": str(sheet.page), "data-material": material,
