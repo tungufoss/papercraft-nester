@@ -105,7 +105,7 @@ class Sheet:
     passes: list[Pass] = field(default_factory=list)
     waste: "Waste | None" = None
 
-    def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 10.0,
+    def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 20.0,
              min_area: float = 25.0, detour: float = 1.5) -> "Sheet":
         home = self.origin
         cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
@@ -164,7 +164,7 @@ class Waste:
     into a saved offcut or a piece, so a move stays blade-down when a path through waste exists that
     is at most `detour` times the straight move (straight if possible, else around pieces)."""
 
-    def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, min_width: float = 10.0,
+    def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, min_width: float = 20.0,
                  min_area: float = 25.0, detour: float = 1.5, margin: float = 0.15):
         pieces = unary_union([Polygon(r).buffer(0) for r in rings])
         closed = pieces.buffer(strip / 2).buffer(-strip / 2)
@@ -351,7 +351,7 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         min_width: float = 10.0, min_area: float = 25.0, detour: float = 1.5, log=print) -> list[dict]:
+         min_width: float = 20.0, min_area: float = 25.0, detour: float = 1.5, log=print) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
         sheet.plan(router, share_tol, stay_down, min_width, min_area, detour)
