@@ -105,8 +105,8 @@ class Sheet:
     passes: list[Pass] = field(default_factory=list)
     waste: "Waste | None" = None
 
-    def plan(self, router, share_tol: float, stay_down: float = 0.0, keep: float = 30.0,
-             detour: float = 1.5) -> "Sheet":
+    def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 10.0,
+             min_area: float = 25.0, detour: float = 1.5) -> "Sheet":
         home = self.origin
         cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
         self.passes = [self._cut_pass(cut, router.solve(cut, home), home, share_tol)]
@@ -116,7 +116,7 @@ class Sheet:
         jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
         self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
         sheet = box(self.origin[0], self.origin[1], self.origin[0] + self.size[0], self.origin[1] + self.size[1])
-        self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, keep, detour)
+        self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, min_width, min_area, detour)
                       if stay_down > 0 else None)
         for p in self.passes:
             p.join(self.waste if p.kind == "cut" else None, home)  # folds and labels always lift
@@ -158,17 +158,18 @@ class Waste:
     """Step 2 and 3 of the cut plan, after the shortest lifted route.
 
     Saved offcuts: the sheet minus the pieces closed over every gap or notch narrower than `strip`
-    mm, keeping only parts a `keep` mm disc fits in. Everything else that is not a piece is waste:
+    mm, with every part narrower than `min_width` mm shaved off, keeping pieces of at least
+    `min_area` cm². Everything else that is not a piece is waste:
     thin strips, notches, sheet edges and small leftovers. The blade may cut through waste but never
     into a saved offcut or a piece, so a move stays blade-down when a path through waste exists that
     is at most `detour` times the straight move (straight if possible, else around pieces)."""
 
-    def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, keep: float = 30.0,
-                 detour: float = 1.5, margin: float = 0.15):
+    def __init__(self, rings: list[list[Point]], sheet: Polygon, strip: float, min_width: float = 10.0,
+                 min_area: float = 25.0, detour: float = 1.5, margin: float = 0.15):
         pieces = unary_union([Polygon(r).buffer(0) for r in rings])
         closed = pieces.buffer(strip / 2).buffer(-strip / 2)
-        rest = sheet.difference(closed)
-        self.saved = [g for g in getattr(rest, "geoms", [rest]) if not g.buffer(-keep / 2).is_empty]
+        rest = sheet.difference(closed).buffer(-min_width / 2).buffer(min_width / 2, join_style="mitre").intersection(sheet)
+        self.saved = [g for g in getattr(rest, "geoms", [rest]) if g.area >= 100 * min_area]
         self.region = sheet.difference(unary_union(self.saved)).buffer(1e-6) if self.saved else sheet.buffer(1e-6)
         self.core = pieces.buffer(-margin)  # a move may touch an outline, never enter a piece
         self._region, self._core = prep(self.region), prep(self.core)
@@ -350,10 +351,10 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         keep: float = 30.0, detour: float = 1.5, log=print) -> list[dict]:
+         min_width: float = 10.0, min_area: float = 25.0, detour: float = 1.5, log=print) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
-        sheet.plan(router, share_tol, stay_down, keep, detour)
+        sheet.plan(router, share_tol, stay_down, min_width, min_area, detour)
         log(f"page {sheet.page:02d} {sheet.material:<7} " + " | ".join(
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
     output.parent.mkdir(parents=True, exist_ok=True)
