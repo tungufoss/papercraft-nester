@@ -131,19 +131,20 @@ class GurobiRouter(HeuristicRouter):
     The order Gurobi finds is polished with the full option DP, and never returned if worse.
     """
     name = "gurobi"
+    small = 2000  # variables allowed by the size-limited licence
 
     def __init__(self, time_limit: float = 30.0, max_options: int = 8, verbose: bool = False):
         import gurobipy  # noqa: F401  (fail early so the caller can fall back)
         self.time_limit, self.max_options, self.verbose = time_limit, max_options, verbose
 
-    def candidates(self, jobs, j, chosen):
+    def candidates(self, jobs, j, chosen, max_options=None):
         """Options whose entry lies closest to another job, plus the heuristic's choice."""
-        n = len(jobs[j].options)
-        if n <= self.max_options:
+        n, cap = len(jobs[j].options), max_options or self.max_options
+        if n <= cap:
             return list(range(n))
         others = [jobs[i].entry(k) for i in range(len(jobs)) if i != j for k in range(len(jobs[i].options))]
         near = sorted(range(n), key=lambda k: min((dist(jobs[j].entry(k), p) for p in others), default=0))
-        return sorted(set(near[:self.max_options - 1]) | {chosen})
+        return sorted(set(near[:cap - 1]) | {chosen})
 
     def solve(self, jobs, home):
         import gurobipy as gp
@@ -152,14 +153,20 @@ class GurobiRouter(HeuristicRouter):
             return start
         try:
             return self.exact(jobs, home, start)
-        except gp.GurobiError as exc:  # e.g. the pip size-limited licence on a big sheet
-            print(f"gurobi: {exc}; keeping the heuristic route")
+        except gp.GurobiError as exc:  # e.g. the pip size-limited licence (2000 variables)
+            if len(jobs) * (len(jobs) + 1) > self.small:
+                print(f"gurobi: {exc}; keeping the heuristic route ({len(jobs)} jobs)")
+                return start
+        try:  # order only: one option per job (the heuristic's), the option DP picks the rest
+            return self.exact(jobs, home, start, max_options=1)
+        except gp.GurobiError as exc:
+            print(f"gurobi: {exc}; keeping the heuristic route ({len(jobs)} jobs)")
             return start
 
-    def exact(self, jobs, home, start):
+    def exact(self, jobs, home, start, max_options=None):
         import gurobipy as gp
         chosen = dict(start)
-        nodes = [(j, k) for j in range(len(jobs)) for k in self.candidates(jobs, j, chosen[j])]
+        nodes = [(j, k) for j in range(len(jobs)) for k in self.candidates(jobs, j, chosen[j], max_options)]
         HOME = -1
         m = gp.Model()
         m.Params.OutputFlag = int(self.verbose)

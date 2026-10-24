@@ -65,3 +65,75 @@ may assign vectors to cut operations; inspect and set the intended operations in
 
 The current output retains glue tabs intact. Tab trimming is not implemented because the
 converter handoff does not yet distinguish tab geometry from the visible piece body.
+
+## 5. Order the cut and fold paths per sheet
+
+`cutpath` keeps every piece where it is and only orders the tool paths, one sheet at a time. It
+reads the converter's export SVG (`<model>-export.svg`), so it works even when glue pairs are
+still wrong.
+
+```sh
+papercraft-nester cutpath \
+  --svg ../../data/bowser/bowser-export.svg \
+  --output ../../data/bowser/bowser-cutplan.svg
+```
+
+The output has the layers **Cut**, **Fold valley**, **Fold mountain** and **Draw** (labels as
+single-stroke pen paths), plus a hidden **Review** layer with the moves. A piece is always cut in
+one go, and valley and mountain folds are separate passes. The tool is lifted on every move, so
+travel never cuts or scores the paper; the solver only makes those moves shorter.
+
+![Generic example sheet: source order (left) against the planned route (right). Solid = cut,
+dash-dot = mountain fold, dashed = valley fold (the template styles in the YAML), dotted =
+lifted travel from the sheet corner. This sheet has no valley folds.](img/cutpath-example.svg)
+
+Regenerate the figure with
+`PYTHONPATH=src python scripts/cutpath-figure.py examples/example-export.svg img/cutpath-example.svg`
+(`examples/example-export.svg` is the converter's synthetic example model).
+
+**Interactive map.** Pick a sheet and switch the layers Cut, Fold valley, Fold mountain and Draw
+on or off. Every pass is drawn the same way in its own colour: numbered nodes where the tool goes
+down (0 = sheet corner), arrows along the path, dotted lifted moves, and fold order at each
+fold's midpoint. Green is saved offcut, orange a blade-down cut through waste (`--stay-down`).
+
+```{=html}
+<iframe src="img/cutpath-viewer.html" width="100%" height="640" style="border:1px solid #ccc"
+  title="Cut plan map, example model"></iframe>
+```
+
+Regenerate with `PYTHONPATH=src python scripts/cutpath-viewer.py EXPORT.svg OUT.html --stay-down`.
+
+**Cutting through waste.** `--stay-down` adds two steps after the shortest route:
+
+1. *Offcuts to save.* The pieces are closed over every gap or notch narrower than the strip width
+   (10 mm, or `--stay-down 6`). What is left of the sheet is split at every neck narrower than
+   `--min-width` (20 mm), so no saved piece has a thin part that could tear, and each piece of at
+   least `--min-area` (50 cm²) is kept as clean offcut; thin strips, notches and small leftovers are waste.
+2. *Travel through waste.* A move between two outlines stays blade-down only when it is a single
+   straight cut through waste; otherwise the tool lifts, since a detour through waste would cost
+   more than the lift. It never enters a piece or a saved offcut, and away from its ends it keeps
+   0.3 mm from every outline and every earlier move, so no line is cut twice (the outlines and
+   these moves form one Euler path per stroke).
+
+Folds and labels always lift (lines that touch end to end are still scored in one stroke). The CSV column `recut_mm` measures any length the tool would go over twice; it is 0 on Bowser and a warning is printed otherwise. The
+saved offcuts are shaded in the hidden Review layer and their area is in the CSV. Joined outlines
+become one path, so in Inkscape such a path covers several pieces (`data-piece` lists them). On
+Bowser this takes the cut lifts from 178 to 127, cutting 0.9 m through waste; 9 of the 21 sheets keep an offcut (50 to 115 cm²), since the source layout leaves little open paper.
+
+**One Cricut upload.** `<model>-cutplan-cricut.svg` (or `--cricut FILE`) holds every sheet side
+by side, one row per cardstock colour. Each sheet is up to four ungrouped compound paths labelled
+`Page NN <colour> · <pass> (<tool>)`, so the file holds four layers per sheet at most. After
+import, select one sheet's layers and Attach them so Design Space keeps them on one mat.
+
+**Per-sheet files for Cricut.** Next to the plan, `cutpath` writes one SVG per sheet
+(`<model>-cutplan-sheets/<model>-cutplan-page-NN-<colour>.svg`, or `--sheets DIR`), sized to the sheet.
+Each holds one compound path per tool and no groups, so Design Space imports it as four layers:
+Cut (fine-point blade), Fold valley (double scoring wheel), Fold mountain (single scoring wheel) and
+Draw (pen). The subpaths are in the planned order, and each outline starts at its planned corner and
+runs open (no `Z`) back to it.
+
+**Shared edges.** An edge that lies within `--share-tol` (default 0.35 mm) of an edge a neighbour
+already cut is cut only once. Keep this tolerance at the blade's precision: a larger value would
+cut one piece along its neighbour's line and trim that piece. On the source PDF layout the pieces
+are at least 1.8 mm apart, so nothing is shared; the saving comes once nesting places pieces
+edge to edge.

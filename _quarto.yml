@@ -5,6 +5,7 @@ project:
   resources:
     - styles/hi-watermark.css
     - img/hi/hi_logo.svg
+    - img/cutpath-viewer.html
 
 lang: en
 

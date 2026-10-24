@@ -1,0 +1,264 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" width="8.2677in" height="11.6929in" viewBox="0 0 210.000 297.000" data-contract="lowpoly-export/1" data-units="mm" data-project="example">
+<title>Example papercraft (export)</title>
+<sodipodi:namedview inkscape:document-units="mm">
+<inkscape:page id="page-01" inkscape:label="Page 01 · White cardstock" x="0.000" y="0.000" width="210.000" height="297.000" />
+</sodipodi:namedview>
+<g id="pieces" inkscape:groupmode="layer" inkscape:label="Pieces">
+<g id="material-white" inkscape:groupmode="layer" inkscape:label="White cardstock">
+<g id="piece-01-01" inkscape:label="piece-01-01" data-material="white" data-piece="piece-01-01" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-01-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 36.294,9.939 31.323,14.821 31.330,22.337 22.897,21.427 11.350,30.751 10.624,39.222 9.908,47.581 15.178,53.552 23.617,54.084 27.145,61.787 45.979,68.737 53.650,65.171 57.592,57.680 52.647,41.950 45.124,38.039 52.705,34.214 57.577,19.605 53.770,11.997 44.356,10.049 Z" data-operation="cut" />
+</g>
+<g id="piece-01-01-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-01-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 10.624,39.222 44.356,10.049" data-operation="score" data-fold="mountain" />
+<path d="M 23.617,54.084 31.330,22.337" data-operation="score" data-fold="mountain" />
+<path d="M 23.617,54.084 53.650,65.171" data-operation="score" data-fold="mountain" />
+<path d="M 45.124,38.039 53.650,65.171" data-operation="score" data-fold="mountain" />
+<path d="M 45.124,38.039 53.770,11.997" data-operation="score" data-fold="mountain" />
+<path d="M 23.617,54.084 45.124,38.039" data-operation="score" data-fold="mountain" />
+<path d="M 44.356,10.049 45.124,38.039" data-operation="score" data-fold="mountain" />
+<path d="M 31.330,22.337 45.124,38.039" data-operation="score" data-fold="mountain" />
+<path d="M 10.624,39.222 23.617,54.084" data-operation="score" data-fold="mountain" />
+<path d="M 31.330,22.337 44.356,10.049" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-01-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-01-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="48.309" y="13.291" font-size="2.46" dominant-baseline="central" transform="rotate(12.5 48.309 13.291)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1A" data-pair-status="extra copy: likely misread">1A</text>
+<text x="39.511" y="18.062" font-size="2.46" dominant-baseline="central" transform="rotate(-45.0 39.511 18.062)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1B" data-pair-status="extra copy: likely misread">1B</text>
+<text x="46.708" y="23.989" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 46.708 23.989)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1C" data-pair-status="extra copy: likely misread">1C</text>
+<text x="22.578" y="32.873" font-size="2.46" dominant-baseline="central" transform="rotate(-40.2 22.578 32.873)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="1D" data-pair-status="extra copy: likely misread">1D</text>
+<text x="19.205" y="44.563" font-size="2.46" dominant-baseline="central" transform="rotate(71.6 19.205 44.563)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1E" data-pair-status="extra copy: likely misread">1E</text>
+<text x="46.618" y="52.423" font-size="2.46" dominant-baseline="central" transform="rotate(70.0 46.618 52.423)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1F" data-pair-status="extra copy: likely misread">1F</text>
+<text x="39.597" y="56.944" font-size="2.46" dominant-baseline="central" transform="rotate(20.6 39.597 56.944)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1G" data-pair-status="extra copy: likely misread">1G</text>
+</g>
+</g>
+<g id="piece-01-02" inkscape:label="piece-01-02" data-material="white" data-piece="piece-01-02" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-02-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 119.982,10.042 112.545,9.891 107.382,14.963 107.389,22.544 95.276,26.460 103.897,31.925 96.776,36.522 92.455,57.150 97.114,64.235 121.507,51.783 108.937,26.234 117.115,24.677 121.542,18.147 Z" data-operation="cut" />
+</g>
+<g id="piece-01-02-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-02-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 97.114,64.235 103.897,31.925" data-operation="score" data-fold="mountain" />
+<path d="M 103.897,31.925 121.507,51.783" data-operation="score" data-fold="mountain" />
+<path d="M 108.937,26.234 119.982,10.042" data-operation="score" data-fold="mountain" />
+<path d="M 107.389,22.544 119.982,10.042" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-02-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-02-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="115.641" y="18.133" font-size="2.46" dominant-baseline="central" transform="rotate(-45.0 115.641 18.133)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1H" data-pair-status="extra copy: likely misread">1H</text>
+<text x="112.064" y="16.477" font-size="2.46" dominant-baseline="central" transform="rotate(-56.3 112.064 16.477)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1J" data-pair-status="extra copy: likely misread">1J</text>
+<text x="101.887" y="26.806" font-size="2.46" dominant-baseline="central" transform="rotate(-17.7 101.887 26.806)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1K" data-pair-status="extra copy: likely misread">1K</text>
+<text x="112.662" y="40.200" font-size="2.46" dominant-baseline="central" transform="rotate(66.0 112.662 40.200)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1L" data-pair-status="extra copy: likely misread">1L</text>
+<text x="103.193" y="48.550" font-size="2.46" dominant-baseline="central" transform="rotate(-78.7 103.193 48.550)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1M" data-pair-status="extra copy: likely misread">1M</text>
+<text x="107.931" y="55.435" font-size="2.46" dominant-baseline="central" transform="rotate(-23.2 107.931 55.435)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1N" data-pair-status="extra copy: likely misread">1N</text>
+</g>
+</g>
+<g id="piece-01-03" inkscape:label="piece-01-03" data-material="white" data-piece="piece-01-03" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-03-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 139.555,9.923 140.886,16.686 132.436,16.580 126.587,22.266 126.583,30.754 139.565,45.701 147.433,59.118 146.721,50.222 147.086,17.951 147.514,13.944 144.441,10.346 Z" data-operation="cut" />
+</g>
+<g id="piece-01-03-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-03-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 139.565,45.701 140.886,16.686" data-operation="score" data-fold="mountain" />
+<path d="M 139.565,45.701 147.086,17.951" data-operation="score" data-fold="mountain" />
+<path d="M 126.583,30.754 140.886,16.686" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-03-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-03-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="141.998" y="12.762" font-size="2.46" dominant-baseline="central" transform="rotate(78.7 141.998 12.762)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1P" data-pair-status="extra copy: likely misread">1P</text>
+<text x="141.098" y="16.089" font-size="2.46" dominant-baseline="central" transform="rotate(52.1 141.098 16.089)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1R" data-pair-status="extra copy: likely misread">1R</text>
+<text x="135.678" y="25.612" font-size="2.46" dominant-baseline="central" transform="rotate(-45.0 135.678 25.612)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1S" data-pair-status="extra copy: likely misread">1S</text>
+<text x="143.933" y="34.219" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 143.933 34.219)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1T" data-pair-status="extra copy: likely misread">1T</text>
+<text x="135.146" y="36.223" font-size="2.46" dominant-baseline="central" transform="rotate(48.0 135.146 36.223)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1U" data-pair-status="extra copy: likely misread">1U</text>
+<text x="145.890" y="50.898" font-size="2.46" dominant-baseline="central" transform="rotate(58.6 145.890 50.898)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1V" data-pair-status="extra copy: likely misread">1V</text>
+<text x="144.780" y="54.681" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 144.780 54.681)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1W" data-pair-status="extra copy: likely misread">1W</text>
+</g>
+</g>
+<g id="piece-01-04" inkscape:label="piece-01-04" data-material="white" data-piece="piece-01-04" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-04-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 156.197,17.320 154.171,23.022 156.930,28.767 155.324,34.144 158.222,39.008 152.931,43.522 152.635,47.329 152.481,49.315 158.363,55.323 178.359,55.432 184.325,49.387 192.662,51.135 192.205,20.894 187.608,13.814 169.060,9.927 161.896,14.628 Z" data-operation="cut" />
+</g>
+<g id="piece-01-04-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-04-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 152.635,47.329 192.205,20.894" data-operation="score" data-fold="mountain" />
+<path d="M 156.930,28.767 192.205,20.894" data-operation="score" data-fold="mountain" />
+<path d="M 161.896,14.628 192.205,20.894" data-operation="score" data-fold="mountain" />
+<path d="M 184.325,49.387 192.205,20.894" data-operation="score" data-fold="mountain" />
+<path d="M 152.481,49.315 184.325,49.387" data-operation="score" data-fold="mountain" />
+<path d="M 156.930,28.767 161.896,14.628" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-04-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-04-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="176.494" y="20.450" font-size="2.46" dominant-baseline="central" transform="rotate(12.8 176.494 20.450)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1X" data-pair-status="ok">1X</text>
+<text x="162.100" y="22.522" font-size="2.46" dominant-baseline="central" transform="rotate(-70.7 162.100 22.522)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="1Y" data-pair-status="extra copy: likely misread">1Y</text>
+<text x="162.465" y="33.174" font-size="2.46" dominant-baseline="central" transform="rotate(60.9 162.465 33.174)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="1Z" data-pair-status="extra copy: likely misread">1Z</text>
+<text x="189.512" y="35.983" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 189.512 35.983)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2A" data-pair-status="extra copy: likely misread">2A</text>
+<text x="159.526" y="46.990" font-size="2.46" dominant-baseline="central" transform="rotate(-45.0 159.526 46.990)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2B" data-pair-status="extra copy: likely misread">2B</text>
+<text x="168.416" y="46.426" font-size="2.46" dominant-baseline="central" transform="rotate(0.0 168.416 46.426)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2C" data-pair-status="extra copy: likely misread">2C</text>
+<text x="188.933" y="48.135" font-size="2.46" dominant-baseline="central" transform="rotate(15.9 188.933 48.135)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2D" data-pair-status="extra copy: likely misread">2D</text>
+</g>
+</g>
+<g id="piece-01-05" inkscape:label="piece-01-05" data-material="white" data-piece="piece-01-05" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-05-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 70.293,11.942 66.827,18.162 68.868,25.292 65.272,25.230 62.610,27.555 62.823,31.900 70.315,61.963 77.629,64.937 84.511,62.044 87.483,54.617 87.491,21.832 84.208,18.861 80.120,19.260 77.285,22.409 77.468,9.960 Z" data-operation="cut" />
+</g>
+<g id="piece-01-05-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-05-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 62.823,31.900 87.483,54.617" data-operation="score" data-fold="mountain" />
+<path d="M 68.868,25.292 87.483,54.617" data-operation="score" data-fold="mountain" />
+<path d="M 77.285,22.409 87.483,54.617" data-operation="score" data-fold="mountain" />
+<path d="M 70.315,61.963 87.483,54.617" data-operation="score" data-fold="mountain" />
+<path d="M 68.868,25.292 77.285,22.409" data-operation="score" data-fold="mountain" />
+<path d="M 68.868,25.292 77.468,9.960" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-05-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-05-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="75.424" y="17.639" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 75.424 17.639)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2E" data-pair-status="extra copy: likely misread">2E</text>
+<text x="82.597" y="24.434" font-size="2.46" dominant-baseline="central" transform="rotate(-5.2 82.597 24.434)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="2F" data-pair-status="extra copy: likely misread">2F</text>
+<text x="67.212" y="29.727" font-size="2.46" dominant-baseline="central" transform="rotate(-39.8 67.212 29.727)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="2G" data-pair-status="extra copy: likely misread">2G</text>
+<text x="84.526" y="38.241" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 84.526 38.241)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2H" data-pair-status="extra copy: likely misread">2H</text>
+<text x="69.141" y="45.706" font-size="2.46" dominant-baseline="central" transform="rotate(77.9 69.141 45.706)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="1X" data-pair-status="ok">1X</text>
+<text x="77.769" y="55.676" font-size="2.46" dominant-baseline="central" transform="rotate(-21.8 77.769 55.676)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2J" data-pair-status="extra copy: likely misread">2J</text>
+</g>
+</g>
+<g id="piece-01-06" inkscape:label="piece-01-06" data-material="white" data-piece="piece-01-06" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-06-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 113.282,73.748 109.595,74.876 107.857,78.214 100.599,79.514 96.548,84.908 97.592,92.041 93.156,90.166 88.970,91.830 87.181,96.302 90.560,102.387 96.946,104.177 103.080,100.744 116.843,103.033 113.736,90.360 116.821,75.576 Z" data-operation="cut" />
+</g>
+<g id="piece-01-06-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-06-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 97.592,92.041 107.857,78.214" data-operation="score" data-fold="mountain" />
+<path d="M 103.080,100.744 113.736,90.360" data-operation="score" data-fold="mountain" />
+<path d="M 97.592,92.041 113.736,90.360" data-operation="score" data-fold="mountain" />
+<path d="M 107.857,78.214 113.736,90.360" data-operation="score" data-fold="mountain" />
+<path d="M 107.857,78.214 116.821,75.576" data-operation="score" data-fold="mountain" />
+<path d="M 87.181,96.302 103.080,100.744" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-06-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-06-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="112.521" y="81.298" font-size="2.46" dominant-baseline="central" transform="rotate(-80.3 112.521 81.298)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="2K" data-pair-status="extra copy: likely misread">2K</text>
+<text x="104.858" y="86.848" font-size="2.46" dominant-baseline="central" transform="rotate(-52.1 104.858 86.848)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2L" data-pair-status="extra copy: likely misread">2L</text>
+<text x="94.403" y="96.167" font-size="2.46" dominant-baseline="central" transform="rotate(-18.4 94.403 96.167)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="2M" data-pair-status="extra copy: likely misread">2M</text>
+<text x="111.782" y="97.687" font-size="2.46" dominant-baseline="central" transform="rotate(78.7 111.782 97.687)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="2N" data-pair-status="extra copy: likely misread">2N</text>
+<text x="109.643" y="98.919" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 109.643 98.919)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2P" data-pair-status="extra copy: likely misread">2P</text>
+</g>
+</g>
+<g id="piece-01-07" inkscape:label="piece-01-07" data-material="white" data-piece="piece-01-07" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-07-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 16.000,73.749 9.945,83.167 14.818,83.854 10.030,85.011 19.220,99.289 19.566,105.943 24.255,110.126 30.906,109.726 30.900,82.929 Z" data-operation="cut" />
+</g>
+<g id="piece-01-07-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-07-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 19.220,99.289 30.900,82.929" data-operation="score" data-fold="mountain" />
+<path d="M 19.220,99.289 30.906,109.726" data-operation="score" data-fold="mountain" />
+<path d="M 14.818,83.854 30.900,82.929" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-07-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-07-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="14.285" y="80.713" font-size="2.46" dominant-baseline="central" transform="rotate(-49.4 14.285 80.713)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2R" data-pair-status="extra copy: likely misread">2R</text>
+<text x="21.809" y="80.676" font-size="2.46" dominant-baseline="central" transform="rotate(32.0 21.809 80.676)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2S" data-pair-status="extra copy: likely misread">2S</text>
+<text x="13.028" y="85.805" font-size="2.46" dominant-baseline="central" transform="rotate(-21.8 13.028 85.805)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2T" data-pair-status="extra copy: likely misread">2T</text>
+<text x="16.915" y="90.578" font-size="2.46" dominant-baseline="central" transform="rotate(58.0 16.915 90.578)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2U" data-pair-status="extra copy: likely misread">2U</text>
+<text x="27.940" y="96.238" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 27.940 96.238)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2V" data-pair-status="extra copy: likely misread">2V</text>
+<text x="26.902" y="102.377" font-size="2.46" dominant-baseline="central" transform="rotate(40.2 26.902 102.377)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2W" data-pair-status="extra copy: likely misread">2W</text>
+</g>
+</g>
+<g id="piece-01-08" inkscape:label="piece-01-08" data-material="white" data-piece="piece-01-08" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-08-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 50.404,73.742 42.611,77.092 35.891,94.036 39.243,101.794 50.941,99.060 55.033,97.649 57.150,97.649 58.844,98.496 59.477,80.926 Z" data-operation="cut" />
+</g>
+<g id="piece-01-08-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-08-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 39.243,101.794 50.404,73.742" data-operation="score" data-fold="mountain" />
+<path d="M 39.243,101.794 59.477,80.926" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-08-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-08-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="53.241" y="79.415" font-size="2.46" dominant-baseline="central" transform="rotate(35.5 53.241 79.415)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2X" data-pair-status="extra copy: likely misread">2X</text>
+<text x="47.391" y="88.705" font-size="2.46" dominant-baseline="central" transform="rotate(-67.2 47.391 88.705)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="2Y" data-pair-status="extra copy: likely misread">2Y</text>
+<text x="56.204" y="89.741" font-size="2.46" dominant-baseline="central" transform="rotate(-86.6 56.204 89.741)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="2Z" data-pair-status="extra copy: likely misread">2Z</text>
+<text x="47.198" y="96.856" font-size="2.46" dominant-baseline="central" transform="rotate(-14.0 47.198 96.856)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="3A" data-pair-status="extra copy: likely misread">3A</text>
+</g>
+</g>
+<g id="piece-01-09" inkscape:label="piece-01-09" data-material="white" data-piece="piece-01-09" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-09-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 82.122,73.795 66.287,85.033 64.520,87.859 65.487,90.596 68.310,91.917 82.130,105.738 Z" data-operation="cut" />
+</g>
+<g id="piece-01-09-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-09-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 68.310,91.917 82.122,73.795" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-09-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-09-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="75.549" y="81.781" font-size="2.46" dominant-baseline="central" transform="rotate(-35.2 75.549 81.781)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="3B" data-pair-status="extra copy: likely misread">3B</text>
+<text x="68.785" y="87.972" font-size="2.46" dominant-baseline="central" transform="rotate(59.0 68.785 87.972)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="3C" data-pair-status="extra copy: likely misread">3C</text>
+<text x="79.163" y="89.606" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 79.163 89.606)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="3D" data-pair-status="extra copy: likely misread">3D</text>
+<text x="77.081" y="96.710" font-size="2.46" dominant-baseline="central" transform="rotate(48.8 77.081 96.710)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="3E" data-pair-status="extra copy: likely misread">3E</text>
+</g>
+</g>
+<g id="piece-01-10" inkscape:label="piece-01-10" data-material="white" data-piece="piece-01-10" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-10-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 130.952,73.741 121.870,87.460 123.077,91.688 126.795,93.656 130.951,92.230 Z" data-operation="cut" />
+</g>
+<g id="piece-01-10-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-10-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+
+</g>
+<g id="piece-01-10-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-10-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="128.411" y="82.903" font-size="2.46" dominant-baseline="central" transform="rotate(-90.0 128.411 82.903)" data-operation="draw" data-edge="edge" data-pdf-number="?" data-label="3F" data-pair-status="extra copy: likely misread">3F</text>
+<text x="127.509" y="87.705" font-size="2.46" dominant-baseline="central" transform="rotate(29.4 127.509 87.705)" data-operation="draw" data-edge="none" data-pdf-number="?" data-label="3G" data-pair-status="extra copy: likely misread">3G</text>
+</g>
+</g>
+<g id="piece-01-11" inkscape:label="piece-01-11" data-material="white" data-piece="piece-01-11" data-material-name="White cardstock" data-color="#ffffff" data-source-pdf="example.pdf" data-source-page="1" data-page-origin-mm="0.000 0.000">
+<g id="piece-01-11-cut" inkscape:label="Cut" data-operation="cut" style="fill:#ffffff;stroke:#000000;stroke-width:0.25;fill-rule:evenodd">
+<path d="M 58.138,98.496 56.868,98.072 55.046,98.072 51.649,99.020 49.299,104.009 51.182,109.011 56.510,108.239 59.563,104.121 58.867,99.225 Z" data-operation="cut" />
+</g>
+<g id="piece-01-11-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-11-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 51.182,109.011 56.868,98.072" data-operation="score" data-fold="mountain" />
+</g>
+<g id="piece-01-11-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+
+</g>
+</g>
+<g id="piece-01-11-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="52.634" y="102.115" font-size="2.46" dominant-baseline="central" transform="rotate(-55.0 52.634 102.115)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="3H" data-pair-status="extra copy: likely misread">3H</text>
+<text x="56.325" y="104.390" font-size="2.46" dominant-baseline="central" transform="rotate(-67.6 56.325 104.390)" data-operation="draw" data-edge="tab" data-pdf-number="?" data-label="3J" data-pair-status="extra copy: likely misread">3J</text>
+</g>
+</g>
+</g>
+</g>
+</svg>
