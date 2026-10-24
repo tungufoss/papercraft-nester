@@ -1,0 +1,61 @@
+"""Single-stroke pen font for the short glue labels (alphabet of the lowpoly export step).
+
+Glyphs are open polylines on a 4 x 6 grid (y down, 0 = cap line), so a Cricut pen draws each
+stroke once instead of tracing a filled outline.
+"""
+from __future__ import annotations
+import math
+
+_P = [(0, 6), (0, 0), (3, 0), (4, 1), (4, 2), (3, 3), (0, 3)]
+GLYPHS: dict[str, list[list[tuple[float, float]]]] = {
+    "1": [[(1, 1), (2, 0), (2, 6)], [(1, 6), (3, 6)]],
+    "2": [[(0, 1), (1, 0), (3, 0), (4, 1), (4, 2), (0, 6), (4, 6)]],
+    "3": [[(0, 0), (4, 0), (2, 2.5), (3, 2.5), (4, 3.5), (4, 5), (3, 6), (1, 6), (0, 5)]],
+    "4": [[(3, 6), (3, 0), (0, 4), (4, 4)]],
+    "5": [[(4, 0), (0, 0), (0, 2.5), (3, 2.5), (4, 3.5), (4, 5), (3, 6), (0, 6)]],
+    "7": [[(0, 0), (4, 0), (1.5, 6)]],
+    "8": [[(1, 3), (0, 2), (0, 1), (1, 0), (3, 0), (4, 1), (4, 2), (3, 3), (1, 3), (0, 4), (0, 5),
+           (1, 6), (3, 6), (4, 5), (4, 4), (3, 3)]],
+    "A": [[(0, 6), (2, 0), (4, 6)], [(0.67, 4), (3.33, 4)]],
+    "B": [_P, [(3, 3), (4, 4), (4, 5), (3, 6), (0, 6)]],
+    "C": [[(4, 1), (3, 0), (1, 0), (0, 1), (0, 5), (1, 6), (3, 6), (4, 5)]],
+    "D": [[(0, 0), (0, 6), (2.5, 6), (4, 4.5), (4, 1.5), (2.5, 0), (0, 0)]],
+    "E": [[(4, 0), (0, 0), (0, 6), (4, 6)], [(0, 3), (3, 3)]],
+    "F": [[(4, 0), (0, 0), (0, 6)], [(0, 3), (3, 3)]],
+    "G": [[(4, 1), (3, 0), (1, 0), (0, 1), (0, 5), (1, 6), (3, 6), (4, 5), (4, 3.5), (2.5, 3.5)]],
+    "H": [[(0, 0), (0, 6)], [(4, 0), (4, 6)], [(0, 3), (4, 3)]],
+    "J": [[(4, 0), (4, 5), (3, 6), (1, 6), (0, 5)]],
+    "K": [[(0, 0), (0, 6)], [(4, 0), (0, 3.5)], [(1.3, 2.5), (4, 6)]],
+    "L": [[(0, 0), (0, 6), (4, 6)]],
+    "M": [[(0, 6), (0, 0), (2, 3), (4, 0), (4, 6)]],
+    "N": [[(0, 6), (0, 0), (4, 6), (4, 0)]],
+    "P": [_P],
+    "R": [_P, [(2, 3), (4, 6)]],
+    "S": [[(4, 1), (3, 0), (1, 0), (0, 1), (0, 2), (1, 3), (3, 3), (4, 4), (4, 5), (3, 6), (1, 6), (0, 5)]],
+    "T": [[(0, 0), (4, 0)], [(2, 0), (2, 6)]],
+    "U": [[(0, 0), (0, 5), (1, 6), (3, 6), (4, 5), (4, 0)]],
+    "V": [[(0, 0), (2, 6), (4, 0)]],
+    "W": [[(0, 0), (1, 6), (2, 2), (3, 6), (4, 0)]],
+    "X": [[(0, 0), (4, 6)], [(4, 0), (0, 6)]],
+    "Y": [[(0, 0), (2, 3), (4, 0)], [(2, 3), (2, 6)]],
+    "Z": [[(0, 0), (4, 0), (0, 6), (4, 6)]],
+}
+
+
+def text_strokes(text: str, x: float, y: float, size: float, angle: float = 0.0):
+    """Polylines (mm) for `text` centred on (x, y), cap height 0.75*size, rotated by angle degrees."""
+    unit = 0.75 * size / 6
+    advance = 5.5 * unit
+    width = advance * len(text) - 1.5 * unit
+    cos, sin = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+    strokes = []
+    for i, ch in enumerate(text.upper()):
+        if ch not in GLYPHS:
+            raise ValueError(f"no pen glyph for {ch!r} in label {text!r}")
+        for line in GLYPHS[ch]:
+            pts = []
+            for gx, gy in line:
+                dx, dy = -width / 2 + i * advance + gx * unit, (gy - 3) * unit
+                pts.append((x + dx * cos - dy * sin, y + dx * sin + dy * cos))
+            strokes.append(pts)
+    return strokes
