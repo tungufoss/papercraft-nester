@@ -27,6 +27,8 @@ ET.register_namespace("sodipodi", SODI)
 NUM = r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?"
 PASSES = [("cut", "Cut", "#000000"), ("valley", "Fold valley", "#2e8b57"),
           ("mountain", "Fold mountain", "#1f5fbf"), ("draw", "Draw", "#444444")]
+TOOLS = {"cut": "fine-point blade", "valley": "double scoring wheel", "mountain": "single scoring wheel",
+         "draw": "pen"}  # Helga's Cricut tool per pass
 
 
 def rings(d: str) -> list[list[Point]]:
@@ -365,6 +367,30 @@ class ExportFile:
         ET.indent(root)
         ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
+    def write_sheets(self, folder: Path, stem: str) -> list[Path]:
+        """One SVG per sheet, sized to the sheet (mm), one compound path per tool (no groups): Cricut
+        Design Space imports each as a single layer and follows its subpaths in the planned order."""
+        folder.mkdir(parents=True, exist_ok=True)
+        out = []
+        for sheet in sorted(self.sheets.values(), key=lambda s: s.page):
+            (x, y), (w, h) = sheet.origin, sheet.size
+            root = ET.Element(f"{{{SVG}}}svg", {"width": f"{w:g}mm", "height": f"{h:g}mm",
+                                                "viewBox": f"{x:g} {y:g} {w:g} {h:g}", "data-plan": "lowpoly-cutplan/1",
+                                                "data-source-page": str(sheet.page), "data-material": sheet.material})
+            for kind, name, colour in PASSES:
+                p = next(p for p in sheet.passes if p.kind == kind)
+                if not p.strokes:
+                    continue
+                ET.SubElement(root, f"{{{SVG}}}path", {
+                    "id": f"{kind}-page-{sheet.page:02d}", f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
+                    "d": path_d([run for _, run in p.strokes]), "data-operation": kind, "data-tool": TOOLS[kind],
+                    "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
+            ET.indent(root)
+            path = folder / f"{stem}-page-{sheet.page:02d}-{sheet.material}.svg"
+            ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
+            out.append(path)
+        return out
+
     def report(self, path: Path) -> list[dict]:
         rows = [{"page": s.page, "material": s.material, "pass": p.kind, "jobs": len(p.jobs),
                  "travel_source_mm": round(p.source_travel, 1), "travel_mm": round(p.travel, 1),
@@ -386,7 +412,7 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         min_width: float = 20.0, min_area: float = 50.0, log=print) -> list[dict]:
+         min_width: float = 20.0, min_area: float = 50.0, log=print, sheets: Path | None = None) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
         sheet.plan(router, share_tol, stay_down, min_width, min_area)
@@ -394,4 +420,6 @@ def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.3
             f"{p.kind} {p.source_travel:.0f}->{p.travel:.0f} mm" for p in sheet.passes))
     output.parent.mkdir(parents=True, exist_ok=True)
     doc.write(output)
+    if sheets:
+        doc.write_sheets(sheets, output.stem)
     return doc.report(table)
