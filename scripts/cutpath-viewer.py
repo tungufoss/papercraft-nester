@@ -4,7 +4,7 @@
 
 Every pass is drawn the same way in its own colour: the path, an arrow every few cm, a numbered
 node where the tool goes down (0 = sheet corner) and the lifted moves. Fold lines also carry their
-order at the midpoint. Writes one self-contained HTML file (Leaflet from unpkg).
+order at the midpoint. Writes one self-contained HTML file (Leaflet 1.9.4 inlined from scripts/vendor/leaflet, BSD-2).
 """
 from __future__ import annotations
 import json
@@ -13,6 +13,7 @@ from pathlib import Path
 from papercraft_nester.cutpath import ExportFile
 from papercraft_nester.route import HeuristicRouter, dist
 
+VENDOR = Path(__file__).parent / "vendor" / "leaflet"
 PASSES = {"cut": ("Cut", "#000000", ""), "valley": ("Fold valley", "#2e8b57", "6 4"),
           "mountain": ("Fold mountain", "#1f5fbf", "9 3 2 3"), "draw": ("Draw", "#c2255c", "")}
 
@@ -43,8 +44,8 @@ def sheet_data(sheet) -> dict:
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cut plan map</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>__LEAFLET_CSS__</style>
+<script>__LEAFLET_JS__</script>
 <style>
 html,body{margin:0;height:100%;font-family:Arial,sans-serif;background:#fff}
 #bar{padding:6px 10px;font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -136,8 +137,9 @@ show(0);
 def main(src: Path, dst: Path, stay_down: float = 0.0) -> None:
     doc = ExportFile(src)
     sheets = [sheet_data(s.plan(HeuristicRouter(), 0.35, stay_down)) for s in sorted(doc.sheets.values(), key=lambda s: s.page)]
-    dst.write_text(PAGE.replace("__DATA__", json.dumps(sheets, separators=(",", ":")))
-                   .replace("__PASSES__", json.dumps(PASSES)), encoding="utf-8")
+    page = PAGE.replace("__DATA__", json.dumps(sheets, separators=(",", ":"))).replace("__PASSES__", json.dumps(PASSES))
+    page = page.replace("__LEAFLET_CSS__", (VENDOR / "leaflet.css").read_text(encoding="utf-8"))
+    dst.write_text(page.replace("__LEAFLET_JS__", (VENDOR / "leaflet.js").read_text(encoding="utf-8")), encoding="utf-8")
 
 
 if __name__ == "__main__":
