@@ -1,6 +1,6 @@
 """Interactive cut-plan map (Leaflet): one sheet at a time, a layer per tool pass.
 
-    PYTHONPATH=src python scripts/cutpath-viewer.py examples/example-export.svg img/cutpath-viewer.html [--stay-down]
+    PYTHONPATH=src python scripts/cutpath-viewer.py examples/example-export.svg img/cutpath-viewer.html [--stay-down] [--gurobi]
 
 Every pass is drawn the same way in its own colour: the path, an arrow every few cm, a numbered
 node where the tool goes down (0 = sheet corner) and the lifted moves. Fold lines also carry their
@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 from papercraft_nester.cutpath import ExportFile
-from papercraft_nester.route import HeuristicRouter, dist
+from papercraft_nester.route import dist, make_router
 
 VENDOR = Path(__file__).parent / "vendor" / "leaflet"
 PASSES = {"cut": ("Cut", "#000000", ""), "valley": ("Fold valley", "#2e8b57", "6 4"),
@@ -134,13 +134,14 @@ show(0);
 """
 
 
-def main(src: Path, dst: Path, stay_down: float = 0.0) -> None:
-    doc = ExportFile(src)
-    sheets = [sheet_data(s.plan(HeuristicRouter(), 0.35, stay_down)) for s in sorted(doc.sheets.values(), key=lambda s: s.page)]
+def main(src: Path, dst: Path, stay_down: float = 0.0, solver: str = "heuristic") -> None:
+    doc, router = ExportFile(src), make_router(solver, 10.0)
+    sheets = [sheet_data(s.plan(router, 0.35, stay_down)) for s in sorted(doc.sheets.values(), key=lambda s: s.page)]
     page = PAGE.replace("__DATA__", json.dumps(sheets, separators=(",", ":"))).replace("__PASSES__", json.dumps(PASSES))
     page = page.replace("__LEAFLET_CSS__", (VENDOR / "leaflet.css").read_text(encoding="utf-8"))
     dst.write_text(page.replace("__LEAFLET_JS__", (VENDOR / "leaflet.js").read_text(encoding="utf-8")), encoding="utf-8")
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]), Path(sys.argv[2]), 10.0 if "--stay-down" in sys.argv[3:] else 0.0)
+    main(Path(sys.argv[1]), Path(sys.argv[2]), 10.0 if "--stay-down" in sys.argv[3:] else 0.0,
+         "gurobi" if "--gurobi" in sys.argv[3:] else "heuristic")
