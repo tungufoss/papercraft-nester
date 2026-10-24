@@ -60,6 +60,11 @@ def despike(ring: list[Point], tol: float = 0.2) -> list[Point]:
     return pts
 
 
+def fill(kind: str, sheet: "Sheet") -> str:
+    """Cut paths are filled with a tint of the sheet's cardstock colour, the rest stay unfilled."""
+    return f"fill:{sheet.tint};fill-rule:evenodd" if kind == "cut" else "fill:none"
+
+
 def length(lines: list[list[Point]]) -> float:
     return sum(dist(a, b) for line in lines for a, b in zip(line, line[1:]))
 
@@ -136,6 +141,15 @@ class Sheet:
     pieces: list[Piece] = field(default_factory=list)
     passes: list[Pass] = field(default_factory=list)
     waste: "Waste | None" = None
+    colour: str = "#cccccc"  # cardstock colour from the export (data-color)
+
+    @property
+    def tint(self) -> str:
+        """Light tint (35 %) of the cardstock colour, used as the cut path fill."""
+        c = self.colour.lstrip("#")
+        if len(c) == 3:
+            c = "".join(ch * 2 for ch in c)
+        return "#" + "".join(f"{round(255 - (255 - int(c[i:i + 2], 16)) * 0.35):02x}" for i in (0, 2, 4))
 
     def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 20.0,
              min_area: float = 50.0) -> "Sheet":
@@ -304,7 +318,8 @@ class ExportFile:
     def _add(self, g):
         page = int(g.get("data-source-page"))
         ox, oy = (float(v) for v in g.get("data-page-origin-mm", "0 0").split())
-        sheet = self.sheets.setdefault(page, Sheet(page, g.get("data-material"), (ox, oy), self.pages.get(page, (215.9, 279.4))))
+        sheet = self.sheets.setdefault(page, Sheet(page, g.get("data-material"), (ox, oy), self.pages.get(page, (215.9, 279.4)),
+                                                         colour=g.get("data-color") or "#cccccc"))
         cut = next(e for e in g.iter(f"{{{SVG}}}path") if e.get("data-operation") == "cut")
         folds = {"valley": [], "mountain": []}
         for e in g.iter(f"{{{SVG}}}path"):
@@ -345,7 +360,8 @@ class ExportFile:
                                                             "data-source-page": str(sheet.page)})
                 for order, (names, run) in enumerate(p.strokes, 1):
                     ET.SubElement(group, f"{{{SVG}}}path", {"d": path_d([run]), "data-piece": " ".join(names),
-                                                            "data-order": str(order), "data-operation": kind})
+                                                            "data-order": str(order), "data-operation": kind,
+                                                            "style": fill(kind, sheet)})
         review = ET.SubElement(root, f"{{{SVG}}}g", {"id": "layer-review", f"{{{INK}}}groupmode": "layer",
                                                     f"{{{INK}}}label": "Review", "style": "display:none"})
         for sheet in sheets:
@@ -384,7 +400,7 @@ class ExportFile:
                 ET.SubElement(root, f"{{{SVG}}}path", {
                     "id": f"{kind}-page-{sheet.page:02d}", f"{{{INK}}}label": f"{name} ({TOOLS[kind]})",
                     "d": path_d([run for _, run in p.strokes]), "data-operation": kind, "data-tool": TOOLS[kind],
-                    "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
+                    "style": f"{fill(kind, sheet)};stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
             ET.indent(root)
             path = folder / f"{stem}-page-{sheet.page:02d}-{sheet.material}.svg"
             ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
@@ -415,7 +431,7 @@ class ExportFile:
                         "d": path_d([[(px + dx, py + dy) for px, py in run] for _, run in p.strokes]),
                         "data-source-page": str(sheet.page), "data-material": material,
                         "data-operation": kind, "data-tool": TOOLS[kind],
-                        "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
+                        "style": f"{fill(kind, sheet)};stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
                 x += sheet.size[0] + gap
             width = max(width, x - gap)
             y += max(s.size[1] for s in row) + gap
