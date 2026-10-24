@@ -391,6 +391,41 @@ class ExportFile:
             out.append(path)
         return out
 
+    def write_cricut(self, path: Path, gap: float = 20.0) -> None:
+        """One SVG for one Cricut upload: every sheet laid out side by side (one row per cardstock
+        colour), each sheet as up to four ungrouped compound paths (Cut, Fold valley, Fold mountain,
+        Draw) with subpaths in the planned order and outlines open back to their start corner."""
+        sheets = sorted(self.sheets.values(), key=lambda s: s.page)
+        rows: dict[str, list[Sheet]] = {}
+        for sheet in sheets:
+            rows.setdefault(sheet.material, []).append(sheet)
+        root = ET.Element(f"{{{SVG}}}svg", {"data-plan": "lowpoly-cutplan/1"})
+        y, width = 0.0, 0.0
+        for material, row in rows.items():
+            x = 0.0
+            for sheet in row:
+                dx, dy = x - sheet.origin[0], y - sheet.origin[1]
+                for kind, name, colour in PASSES:
+                    p = next(p for p in sheet.passes if p.kind == kind)
+                    if not p.strokes:
+                        continue
+                    ET.SubElement(root, f"{{{SVG}}}path", {
+                        "id": f"page-{sheet.page:02d}-{kind}",
+                        f"{{{INK}}}label": f"Page {sheet.page:02d} {material} · {name} ({TOOLS[kind]})",
+                        "d": path_d([[(px + dx, py + dy) for px, py in run] for _, run in p.strokes]),
+                        "data-source-page": str(sheet.page), "data-material": material,
+                        "data-operation": kind, "data-tool": TOOLS[kind],
+                        "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
+                x += sheet.size[0] + gap
+            width = max(width, x - gap)
+            y += max(s.size[1] for s in row) + gap
+        height = y - gap
+        root.set("width", f"{width:g}mm")
+        root.set("height", f"{height:g}mm")
+        root.set("viewBox", f"0 0 {width:g} {height:g}")
+        ET.indent(root)
+        ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
+
     def report(self, path: Path) -> list[dict]:
         rows = [{"page": s.page, "material": s.material, "pass": p.kind, "jobs": len(p.jobs),
                  "travel_source_mm": round(p.source_travel, 1), "travel_mm": round(p.travel, 1),
@@ -412,7 +447,8 @@ def path_d(lines: list[list[Point]]) -> str:
 
 
 def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.35, stay_down: float = 0.0,
-         min_width: float = 20.0, min_area: float = 50.0, log=print, sheets: Path | None = None) -> list[dict]:
+         min_width: float = 20.0, min_area: float = 50.0, log=print, sheets: Path | None = None,
+         cricut: Path | None = None) -> list[dict]:
     doc = ExportFile(export)
     for sheet in sorted(doc.sheets.values(), key=lambda s: s.page):
         sheet.plan(router, share_tol, stay_down, min_width, min_area)
@@ -422,4 +458,6 @@ def plan(export: Path, output: Path, table: Path, router, share_tol: float = 0.3
     doc.write(output)
     if sheets:
         doc.write_sheets(sheets, output.stem)
+    if cricut:
+        doc.write_cricut(cricut)
     return doc.report(table)

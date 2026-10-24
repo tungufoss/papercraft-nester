@@ -23,6 +23,7 @@ def build_parser():
     cmd.add_argument("--svg",type=Path,required=True,help="converter export SVG (lowpoly-export/1)")
     cmd.add_argument("--output",type=Path,required=True,help="output SVG with Cut, Fold valley, Fold mountain, Draw layers")
     cmd.add_argument("--table",type=Path,help="per-sheet CSV report (default: OUTPUT with .csv)")
+    cmd.add_argument("--cricut",type=Path,help="one SVG for one Cricut upload, all sheets side by side (default: OUTPUT-cricut.svg)")
     cmd.add_argument("--sheets",type=Path,help="folder for one SVG per sheet, ready for Cricut import (default: OUTPUT-sheets/)")
     cmd.add_argument("--solver",choices=["auto","gurobi","heuristic"],default="auto",help="auto uses Gurobi when gurobipy is installed")
     cmd.add_argument("--time-limit",type=float,default=10.0,help="Gurobi seconds per pass and sheet")
@@ -38,13 +39,14 @@ def cutpath(args):
     router=make_router(args.solver,args.time_limit)
     table=args.table or args.output.with_suffix(".csv")
     sheets=args.sheets or args.output.with_name(args.output.stem+"-sheets")
-    rows=plan(args.svg,args.output,table,router,args.share_tol,args.stay_down,args.min_width,args.min_area,sheets=sheets)
+    cricut=args.cricut or args.output.with_name(args.output.stem+"-cricut.svg")
+    rows=plan(args.svg,args.output,table,router,args.share_tol,args.stay_down,args.min_width,args.min_area,sheets=sheets,cricut=cricut)
     for kind in ("cut","valley","mountain","draw"):
         sel=[r for r in rows if r["pass"]==kind]
         print(f"{kind:<8} travel {sum(r['travel_source_mm'] for r in sel):.0f} -> {sum(r['travel_mm'] for r in sel):.0f} mm, length {sum(r['length_source_mm'] for r in sel):.0f} -> {sum(r['length_mm'] for r in sel):.0f} mm, {sum(r['lifts'] for r in sel)} lifts, {sum(r['waste_cut_mm'] for r in sel):.0f} mm cut through waste")
     recut=[r for r in rows if r["recut_mm"]>0]
     for r in recut:print(f"warning: page {r['page']} {r['pass']} goes over {r['recut_mm']} mm twice")
-    print(f"Solver: {router.name} | plan SVG: {args.output.resolve()} | per-sheet SVGs: {sheets.resolve()} | table: {table.resolve()}")
+    print(f"Solver: {router.name} | plan SVG: {args.output.resolve()} | Cricut upload: {cricut.resolve()} | per-sheet SVGs: {sheets.resolve()} | table: {table.resolve()}")
     return 0
 
 def main(argv=None):

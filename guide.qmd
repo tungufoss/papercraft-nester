@@ -120,6 +120,11 @@ saved offcuts are shaded in the hidden Review layer and their area is in the CSV
 become one path, so in Inkscape such a path covers several pieces (`data-piece` lists them). On
 Bowser this takes the cut lifts from 178 to 127, cutting 0.9 m through waste; 9 of the 21 sheets keep an offcut (50 to 115 cm²), since the source layout leaves little open paper.
 
+**One Cricut upload.** `<model>-cutplan-cricut.svg` (or `--cricut FILE`) holds every sheet side
+by side, one row per cardstock colour. Each sheet is up to four ungrouped compound paths labelled
+`Page NN <colour> · <pass> (<tool>)`, so the file holds four layers per sheet at most. After
+import, select one sheet's layers and Attach them so Design Space keeps them on one mat.
+
 **Per-sheet files for Cricut.** Next to the plan, `cutpath` writes one SVG per sheet
 (`<model>-cutplan-sheets/<model>-cutplan-page-NN-<colour>.svg`, or `--sheets DIR`), sized to the sheet.
 Each holds one compound path per tool and no groups, so Design Space imports it as four layers:
