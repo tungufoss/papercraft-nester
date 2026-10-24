@@ -65,3 +65,34 @@ may assign vectors to cut operations; inspect and set the intended operations in
 
 The current output retains glue tabs intact. Tab trimming is not implemented because the
 converter handoff does not yet distinguish tab geometry from the visible piece body.
+
+## 5. Order the cut and fold paths per sheet
+
+`cutpath` keeps every piece where it is and only orders the tool paths, one sheet at a time. It
+reads the converter's export SVG (`<model>-export.svg`), so it works even when glue pairs are
+still wrong.
+
+```sh
+papercraft-nester cutpath \
+  --svg ../../data/bowser/bowser-export.svg \
+  --output ../../data/bowser/bowser-cutplan.svg
+```
+
+The output has the layers **Cut**, **Fold valley**, **Fold mountain** and **Draw** (labels as
+single-stroke pen paths), plus a hidden **Review** layer with the moves. A piece is always cut in
+one go, and valley and mountain folds are separate passes. The tool is lifted on every move, so
+travel never cuts or scores the paper; the solver only makes those moves shorter.
+
+![Generic example sheet: source order (left) against the planned route (right). Solid = cut,
+dash-dot = mountain fold, dashed = valley fold (the template styles in the YAML), dotted =
+lifted travel from the sheet corner. This sheet has no valley folds.](img/cutpath-example.svg)
+
+Regenerate the figure with
+`PYTHONPATH=src python scripts/cutpath-figure.py examples/example-export.svg img/cutpath-example.svg`
+(`examples/example-export.svg` is the converter's synthetic example model).
+
+**Shared edges.** An edge that lies within `--share-tol` (default 0.35 mm) of an edge a neighbour
+already cut is cut only once. Keep this tolerance at the blade's precision: a larger value would
+cut one piece along its neighbour's line and trim that piece. On the source PDF layout the pieces
+are at least 1.8 mm apart, so nothing is shared; the saving comes once nesting places pieces
+edge to edge.
