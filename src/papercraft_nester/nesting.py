@@ -2,6 +2,9 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+import numpy as np
+import shapely
+from shapely.geometry import Polygon as Shape
 from .geometry import bounds,candidate_angles,polygon_distance,polygons_overlap,rotate_normalized,translate
 from .model import Piece,Placement,Sheet,SheetStock
 
@@ -20,22 +23,44 @@ def load_inventory(path: Path):
     if not stocks: raise ValueError("inventory has no sheet stock")
     return stocks,gap,step
 
-def _candidate_positions(sheet:Sheet,piece:Piece,width:float,height:float,gap:float,angle:float):
-    positions={(0.0,0.0)}
-    for placed in sheet.placements:
-        x0,y0,x1,y1=bounds(placed.polygon)
-        positions.update(((x1+gap,y0),(x1+gap,y1-height),(x0-width-gap,y0),(x0-width-gap,y1-height),(x0,y1+gap),(x1-width,y1+gap),(x0,y0-height-gap),(x1-width,y0-height-gap)))
-    source_min_x,source_min_y,_,_=bounds(piece.polygon);source_position=(source_min_x,source_min_y)
-    if abs(angle%360)<1e-6 and (not sheet.placements or sheet.source_page==piece.source_page): positions.add(source_position)
-    ordered=sorted(((x,y) for x,y in positions if x>=-1e-6 and y>=-1e-6 and x+width<=sheet.stock.width_mm+1e-6 and y+height<=sheet.stock.height_mm+1e-6),key=lambda p:(p[1],p[0]))
-    if abs(angle%360)<1e-6 and (not sheet.placements or sheet.source_page==piece.source_page) and source_position in ordered:
-        ordered.remove(source_position);ordered.insert(0,source_position)
-    return ordered
+RES=1.0  # mm per raster cell in the placement search
 
-def _find_on_sheet(piece:Piece,sheet:Sheet,gap:float,step:float):
+def _mask(shape,cols:int,rows:int):
+    """Raster cells (row, col) whose square touches the shape."""
+    xs,ys=np.meshgrid((np.arange(cols)+0.5)*RES,(np.arange(rows)+0.5)*RES)
+    return shapely.contains_xy(shape.buffer(RES*0.75),xs,ys)
+
+def _snug(piece:Piece,sheet:Sheet,gap:float,step:float):
+    """Place the piece where it adds least to the sheet's used region seen from the top edge (its skyline),
+    so pieces tuck into each other's curves and the clean offcut below stays as big as possible.
+    Every angle and every raster position is tried; collisions come from an FFT correlation of the raster masks."""
+    W,H=sheet.stock.width_mm,sheet.stock.height_mm;cols,rows=int(W/RES),int(H/RES)
+    occupied=np.zeros((rows,cols),bool)
+    for other in sheet.placements: occupied|=_mask(Shape(other.polygon).buffer(gap),cols,rows)
+    filled=occupied.any(axis=0);skyline=np.r_[np.where(filled,rows-np.argmax(occupied[::-1],axis=0),0),np.zeros(cols,int)]
+    spectrum=np.fft.rfft2(occupied.astype(float),s=(2*rows,2*cols));options=[]
+    for angle in candidate_angles(piece.polygon,step):
+        normalized,local=rotate_normalized(piece.polygon,angle);w,h=local[2]-local[0],local[3]-local[1]
+        if w>W+1e-6 or h>H+1e-6: continue
+        mask=_mask(Shape(normalized),int(np.ceil(w/RES))+1,int(np.ceil(h/RES))+1);mh,mw=mask.shape
+        hits=np.fft.irfft2(spectrum*np.conj(np.fft.rfft2(mask.astype(float),s=(2*rows,2*cols))),s=(2*rows,2*cols))
+        ny,nx=int((H-h)/RES)+1,int((W-w)/RES)+1;free=hits[:ny,:nx]<0.5
+        used=mask.any(axis=0);bottom=np.where(used,mh-np.argmax(mask[::-1],axis=0),0)[used]
+        for x in range(nx):
+            ys=np.flatnonzero(free[:,x])
+            if not len(ys): continue
+            cost=np.maximum(0,ys[:,None]+bottom[None,:]-skyline[x:x+mw][used][None,:]).sum(axis=1)
+            k=int(np.lexsort((ys,cost))[0]);options.append((int(cost[k]),int(ys[k])+mh,x,angle,normalized,local,int(ys[k])))
+    for cost,_,x,angle,normalized,local,y in sorted(options,key=lambda o:o[:4])[:50]:
+        candidate=translate(normalized,x*RES,y*RES)
+        if all(polygon_distance(candidate,other.polygon)>=gap-1e-6 and not polygons_overlap(candidate,other.polygon) for other in sheet.placements):
+            return Placement(piece,sheet.index,x*RES,y*RES,angle,candidate,local)
+    return None
+
+def _find_on_sheet(piece:Piece,sheet:Sheet,gap:float,step:float,keep_source:bool=True):
     sx0,sy0,sx1,sy1=bounds(piece.polygon)
     same_source=not sheet.placements or sheet.source_page==piece.source_page
-    if same_source and sx0>=-1e-6 and sy0>=-1e-6 and sx1<=sheet.stock.width_mm+1e-6 and sy1<=sheet.stock.height_mm+1e-6:
+    if keep_source and same_source and sx0>=-1e-6 and sy0>=-1e-6 and sx1<=sheet.stock.width_mm+1e-6 and sy1<=sheet.stock.height_mm+1e-6:
         valid=True
         for other in sheet.placements:
             distance=polygon_distance(piece.polygon,other.polygon)
@@ -44,24 +69,7 @@ def _find_on_sheet(piece:Piece,sheet:Sheet,gap:float,step:float):
         if valid:
             _,local=rotate_normalized(piece.polygon,0)
             return Placement(piece,sheet.index,sx0,sy0,0,piece.polygon,local)
-    best=None;best_score=None
-    for angle in candidate_angles(piece.polygon,step):
-        normalized,local=rotate_normalized(piece.polygon,angle);min_x,min_y,max_x,max_y=local;w,h=max_x-min_x,max_y-min_y
-        if w>sheet.stock.width_mm+1e-6 or h>sheet.stock.height_mm+1e-6: continue
-        for x,y in _candidate_positions(sheet,piece,w,h,gap,angle):
-            candidate=translate(normalized,x,y);valid=True
-            for other in sheet.placements:
-                ax0,ay0,ax1,ay1=bounds(candidate);bx0,by0,bx1,by1=bounds(other.polygon)
-                bbox_gap=((max(ax0-bx1,bx0-ax1,0.0))**2+(max(ay0-by1,by0-ay1,0.0))**2)**0.5
-                if bbox_gap>=gap-1e-7 and bbox_gap>0: continue
-                if gap<=1e-7:
-                    if polygons_overlap(candidate,other.polygon): valid=False;break
-                elif polygon_distance(candidate,other.polygon)<gap-1e-6: valid=False;break
-            if valid:
-                score=(y+h,y,x,angle)
-                if best_score is None or score<best_score: best_score=score;best=Placement(piece,sheet.index,x,y,angle,candidate,local)
-                break
-    return best
+    return _snug(piece,sheet,gap,step)
 
 def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
     by_material={}
@@ -78,7 +86,7 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
         for piece in items:
             options=[]
             for sheet in opened:
-                placement=_find_on_sheet(piece,sheet,gap,step if sheet.source_page==piece.source_page else max(step,15.0))
+                placement=_find_on_sheet(piece,sheet,gap,step if sheet.source_page==piece.source_page else max(step,15.0),len(colours[piece.source_page])==1)
                 if placement:
                     x0,y0,x1,y1=bounds(placement.polygon);options.append(((y1,y0,x0,sheet.stock.width_mm*sheet.stock.height_mm),sheet,placement))
             if options:
@@ -88,7 +96,7 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
                 key=(stock.material,stock.width_mm,stock.height_mm,stock.label)
                 if key in seen: continue
                 seen.add(key);probe=Sheet(stock,len(result)+len(opened)+1,piece.source_page)
-                placement=_find_on_sheet(piece,probe,gap,step)
+                placement=_find_on_sheet(piece,probe,gap,step,len(colours[piece.source_page])==1)
                 if placement: possible.append(((stock.width_mm*stock.height_mm,stock.width_mm,stock.height_mm),slot,stock,placement))
             if not possible:
                 dims=", ".join(f"{s.width_mm:g}x{s.height_mm:g} mm x{s.quantity}" for s in available)
