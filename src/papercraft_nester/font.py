@@ -1,5 +1,5 @@
 """Single-stroke pen font for the short glue labels (alphabet of the lowpoly export step, plus G
-for older exports).
+for older exports) and the piece numbers (all ten digits).
 
 Glyphs are open polylines on a 4 x 6 grid (y down, 0 = cap line), so a Cricut pen draws each
 stroke once instead of tracing a filled outline.
@@ -16,6 +16,8 @@ GLYPHS: dict[str, list[list[tuple[float, float]]]] = {
     "5": [[(4, 0), (0, 0), (0, 2.5), (3, 2.5), (4, 3.5), (4, 5), (3, 6), (0, 6)]],
     "6": [[(3.5, 0), (1.5, 0), (0, 2), (0, 5), (1, 6), (3, 6), (4, 5), (4, 3.5), (3, 2.5), (1, 2.5), (0, 3.5)]],
     "7": [[(0, 0), (4, 0), (1.5, 6)]],
+    "9": [[(0.5, 6), (2.5, 6), (4, 4), (4, 1), (3, 0), (1, 0), (0, 1), (0, 2.5), (1, 3.5), (3, 3.5), (4, 2.5)]],
+    "0": [[(1, 0), (3, 0), (4, 1), (4, 5), (3, 6), (1, 6), (0, 5), (0, 1), (1, 0)]],
     "8": [[(1, 3), (0, 2), (0, 1), (1, 0), (3, 0), (4, 1), (4, 2), (3, 3), (1, 3), (0, 4), (0, 5),
            (1, 6), (3, 6), (4, 5), (4, 4), (3, 3)]],
     "A": [[(0, 6), (2, 0), (4, 6)], [(0.67, 4), (3.33, 4)]],
