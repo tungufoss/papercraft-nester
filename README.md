@@ -24,7 +24,7 @@ The optimizer reports source sheet counts, packed sheet counts, utilization, and
 
 ## Cut path per sheet
 
-`papercraft-nester cutpath` orders the tool paths on each sheet of the converter's `<model>-export.svg`, leaving every piece where it is (no nesting). Each sheet (source page) is solved on its own, in four passes: **Cut** (a piece is always cut in one go; an edge within `--share-tol` of one a neighbour already cut is skipped), **Fold valley** and **Fold mountain** (separate passes, each fold line in either direction) and **Draw** (the short glue labels as single-stroke pen paths). It reads only the export SVG, so it works whatever state the glue pairs or 3D fold are in.
+`papercraft-nester cutpath` orders the tool paths on each sheet of the converter's `<model>-export.svg`, leaving every piece where it is (no nesting). Each sheet (source page) is solved on its own, in four passes: **Cut** (a piece is always cut in one go; an edge within `--share-tol` of one a neighbour already cut is skipped), **Fold valley** and **Fold mountain** (separate passes, each fold line in either direction) and **Draw** (the short glue labels, the piece numbers and the circle or square round a mirror twin's number, as single-stroke pen paths). It reads only the export SVG, so it works whatever state the glue pairs or 3D fold are in.
 
 ```text
 papercraft-nester cutpath --svg ../../data/bowser/bowser-export.svg --output ../../data/bowser/bowser-cutplan.svg
