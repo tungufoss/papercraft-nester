@@ -30,7 +30,7 @@ def _mask(shape,cols:int,rows:int):
     xs,ys=np.meshgrid((np.arange(cols)+0.5)*RES,(np.arange(rows)+0.5)*RES)
     return shapely.contains_xy(shape.buffer(RES*0.75),xs,ys)
 
-def _snug(piece:Piece,sheet:Sheet,gap:float,step:float):
+def _snug(piece:Piece,sheet:Sheet,gap:float,step:float,angles=None):
     """Place the piece where it adds least to the sheet's used region seen from the top edge (its skyline),
     so pieces tuck into each other's curves and the clean offcut below stays as big as possible.
     Every angle and every raster position is tried; collisions come from an FFT correlation of the raster masks."""
@@ -39,7 +39,7 @@ def _snug(piece:Piece,sheet:Sheet,gap:float,step:float):
     for other in sheet.placements: occupied|=_mask(Shape(other.polygon).buffer(gap),cols,rows)
     filled=occupied.any(axis=0);skyline=np.r_[np.where(filled,rows-np.argmax(occupied[::-1],axis=0),0),np.zeros(cols,int)]
     spectrum=np.fft.rfft2(occupied.astype(float),s=(2*rows,2*cols));options=[]
-    for angle in candidate_angles(piece.polygon,step):
+    for angle in angles if angles is not None else candidate_angles(piece.polygon,step):
         normalized,local=rotate_normalized(piece.polygon,angle);w,h=local[2]-local[0],local[3]-local[1]
         if w>W+1e-6 or h>H+1e-6: continue
         mask=_mask(Shape(normalized),int(np.ceil(w/RES))+1,int(np.ceil(h/RES))+1);mh,mw=mask.shape
@@ -70,6 +70,24 @@ def _find_on_sheet(piece:Piece,sheet:Sheet,gap:float,step:float,keep_source:bool
             _,local=rotate_normalized(piece.polygon,0)
             return Placement(piece,sheet.index,sx0,sy0,0,piece.polygon,local)
     return _snug(piece,sheet,gap,step)
+
+def _repack(sheet:Sheet,gap:float,step:float):
+    """A sheet of moved pieces only: the first piece placed fixes how the rest line up, so try it at each
+    right angle (and its own best angle), repack the rest snugly, and keep the layout that uses least sheet height."""
+    pieces=sorted((p.piece for p in sheet.placements),key=lambda p:(-p.area_mm2,p.id))
+    def height(placements):return max(bounds(p.polygon)[3] for p in placements)
+    best=sheet.placements;best_key=(height(best),)
+    for turn in (0.0,90.0,180.0,270.0):
+        trial=Sheet(sheet.stock,sheet.index,sheet.source_page);placed=_snug(pieces[0],trial,gap,step,[turn])
+        if placed is None: continue
+        trial.placements.append(placed)
+        for piece in pieces[1:]:
+            placed=_snug(piece,trial,gap,step)
+            if placed is None: break
+            trial.placements.append(placed)
+        else:
+            if (height(trial.placements),)<best_key: best,best_key=trial.placements,(height(trial.placements),)
+    sheet.placements=best
 
 def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
     by_material={}
@@ -103,6 +121,8 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
                 raise NestingError(f"piece {piece.id} ({piece.material}) does not fit remaining inventory: {dims}")
             _,slot,stock,placement=min(possible,key=lambda r:r[0]);slots.pop(slot)
             sheet=Sheet(stock,len(result)+len(opened)+1,piece.source_page);placement.sheet_index=sheet.index;sheet.placements.append(placement);opened.append(sheet)
+        for sheet in opened:
+            if all(len(colours[p.piece.source_page])>1 for p in sheet.placements): _repack(sheet,gap,step)
         result.extend(opened)
     for index,sheet in enumerate(result,1):
         sheet.index=index
