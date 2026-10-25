@@ -32,7 +32,7 @@ def packed_travel(sheets: list[Sheet]) -> float:
 
 def summary(pieces: list[Piece], sheets: list[Sheet], source_page_map: dict[int,str]) -> str:
     baseline=defaultdict(set)
-    for page,material in source_page_map.items(): baseline[material].add(page)
+    for piece in pieces: baseline[piece.material].add(piece.source_page)
     lines=["Bowser Letter nesting benchmark",f"Pieces: {len(pieces)} | baseline source sheets: {sum(map(len,baseline.values()))} | packed sheets: {len(sheets)}"]
     by_material=defaultdict(list)
     for sheet in sheets: by_material[sheet.stock.material].append(sheet)

@@ -2,11 +2,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from .converter import load_material_pages,load_pieces
 from .nesting import NestingError,load_inventory,nest,source_layout
 from .report import summary
-from .svg import write_master
+from .svg import write_export,write_master
 
 def build_parser():
     parser=argparse.ArgumentParser(prog="papercraft-nester",description="Nest labeled papercraft pieces onto finite cardstock inventory.")
@@ -18,6 +19,7 @@ def build_parser():
     cmd.add_argument("--output",type=Path,required=True,help="output master SVG path")
     cmd.add_argument("--gap-mm",type=float,help="override the inventory minimum piece gap")
     cmd.add_argument("--rotation-step",type=float,help="override angular search resolution in degrees")
+    cmd.add_argument("--export",type=Path,help="also write the nested sheets as a lowpoly-export/1 SVG, the input for cutpath")
     cmd.add_argument("--source-baseline",action="store_true",help="keep the source PDF sheet placement as a comparison baseline")
     cmd=sub.add_parser("cutpath",help="order cut, fold and pen paths per sheet without moving pieces")
     cmd.add_argument("--svg",type=Path,required=True,help="converter export SVG (lowpoly-export/1)")
@@ -98,9 +100,12 @@ def main(argv=None):
                 print("Using the source PDF page arrangement as a valid comparison baseline.")
         args.output.parent.mkdir(parents=True,exist_ok=True)
         write_master(sheets,args.output,colors)
+        if args.export:
+            args.export.parent.mkdir(parents=True,exist_ok=True);write_export(sheets,args.export,ET.parse(args.svg).getroot())
         print(summary(pieces,sheets,page_map))
         print(f"Minimum gap: {gap:g} mm | rotation search step: {step:g} degrees")
         print(f"Master SVG: {args.output.resolve()}")
+        if args.export:print(f"Nested export: {args.export.resolve()}")
     except (OSError,ValueError,NestingError,KeyError,json.JSONDecodeError) as exc:
         print(f"papercraft-nester: error: {exc}",file=sys.stderr)
         return 2

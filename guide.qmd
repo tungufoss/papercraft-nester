@@ -52,6 +52,15 @@ You can also run `python -m papercraft_nester.cli nest` with `PYTHONPATH=src`. O
 include `--gap-mm` and `--rotation-step` to override the inventory settings, and
 `--source-baseline` to write the original page placement for comparison.
 
+Pages that hold a single colour keep their PDF layout; pieces from mixed-colour pages (after a
+recolour, for example) are packed into the gaps of their colour's sheets, then onto new sheets.
+Pieces that move are placed snugly: every angle and position is tried on a 1 mm raster, and the
+one that adds least to the used region seen from the sheet's top edge wins, so pieces tuck into
+each other's curves and the clean offcut at the bottom stays as large as possible.
+Add `--export nested-export.svg` to also write the nested sheets as a `lowpoly-export/1` file,
+with every piece's coordinates moved onto its sheet. Give that file to `cutpath` (step 5) to
+order the tool paths on the nested sheets; its pages are numbered by sheet.
+
 The report lists the source and packed sheet counts, utilization per packed sheet, and estimated
 inter-piece reposition distance. If the heuristic cannot fit the inventory, it writes the source
 page arrangement as a comparison baseline and reports that choice.
