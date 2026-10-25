@@ -4,7 +4,7 @@ import json
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from .converter import load_material_pages,load_pieces
+from .converter import load_material_pages,load_pieces,read_redo_list,select_pieces
 from .nesting import NestingError,load_inventory,nest,source_layout
 from .report import summary
 from .svg import write_export,write_master
@@ -20,6 +20,7 @@ def build_parser():
     cmd.add_argument("--gap-mm",type=float,help="override the inventory minimum piece gap")
     cmd.add_argument("--rotation-step",type=float,help="override angular search resolution in degrees")
     cmd.add_argument("--export",type=Path,help="also write the nested sheets as a lowpoly-export/1 SVG, the input for cutpath")
+    cmd.add_argument("--only",type=Path,metavar="REDO",help="nest only the pieces in this list (piece IDs or the piece numbers drawn on them), packed snugly onto fresh sheets: a recut")
     cmd.add_argument("--source-baseline",action="store_true",help="keep the source PDF sheet placement as a comparison baseline")
     cmd=sub.add_parser("cutpath",help="order cut, fold and pen paths per sheet without moving pieces")
     cmd.add_argument("--svg",type=Path,required=True,help="converter export SVG (lowpoly-export/1)")
@@ -81,6 +82,9 @@ def main(argv=None):
             print(f"papercraft-nester: error: {exc}",file=sys.stderr);return 2
     try:
         pieces,source_colors=load_pieces(args.svg,args.manifest)
+        if args.only:
+            pieces=select_pieces(pieces,read_redo_list(args.only))
+            print(f"Redo: {len(pieces)} pieces from {args.only}: {' '.join(p.id for p in pieces)}")
         page_map=load_material_pages(args.manifest)
         stocks,gap,step=load_inventory(args.inventory)
         inventory=json.loads(args.inventory.read_text(encoding="utf-8"))
@@ -93,7 +97,7 @@ def main(argv=None):
             sheets=source_layout(pieces,stocks,gap)
             print("Source PDF placement selected as the comparison baseline.")
         else:
-            try:sheets=nest(pieces,stocks,gap,step)
+            try:sheets=nest(pieces,stocks,gap,step,keep_layout=not args.only)
             except NestingError as search_error:
                 sheets=source_layout(pieces,stocks,gap)
                 print(f"Packing heuristic could not fit this inventory: {search_error}")

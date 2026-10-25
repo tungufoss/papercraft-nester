@@ -64,3 +64,33 @@ def load_pieces(svg_path: Path,manifest_path: Path):
         pieces.append(Piece(element.get("id",f"piece-{len(pieces)+1}"),material,polygon,copy.deepcopy(element),area,offset))
     if not pieces:raise ValueError(f"no piece groups found in {svg_path}")
     return pieces,colors
+
+def piece_number(element)->str:
+    """The piece number the export draws in the middle of the piece (data-piece-number), or "" when there is none."""
+    return next((node.get("data-piece-number") for node in element.iter() if node.get("data-piece-number")),"")
+
+def edge_labels(element)->set[str]:
+    """The glue labels drawn on the piece's edges and tabs (data-label of draw text other than the piece number)."""
+    return {node.get("data-label") for node in element.iter() if node.get("data-label") and not node.get("data-piece-number")}
+
+def read_redo_list(path: Path)->list[str]:
+    """Entries of a redo list, one per line or comma-separated, text after # is a comment. An entry is a piece ID
+    (piece-11-01 or 11-01), the piece number drawn on the cut piece (27; mirror twins share it, so this names both),
+    or a number with one of the piece's edge labels (27:DB) to name just one twin."""
+    entries=[]
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        entries+=[e.strip() for e in line.split("#",1)[0].replace(",", " ").split() if e.strip()]
+    if not entries:raise ValueError(f"{path} lists no pieces")
+    return entries
+
+def select_pieces(pieces,entries:list[str]):
+    """The pieces named by the entries, in model order; an entry that names no piece is an error."""
+    def named(entry):
+        number,_,label=entry.partition(":")
+        return {p.id for p in pieces if entry in (p.id,p.id.removeprefix("piece-"))
+                or (number==piece_number(p.element) and (not label or label in edge_labels(p.element)))}
+    found={entry:named(entry) for entry in entries}
+    unknown=[e for e,ids in found.items() if not ids]
+    if unknown:raise ValueError(f"redo list names no piece for: {' '.join(unknown)}")
+    wanted=set().union(*found.values())
+    return [piece for piece in pieces if piece.id in wanted]
