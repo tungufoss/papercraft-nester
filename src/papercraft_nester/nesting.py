@@ -66,9 +66,12 @@ def _find_on_sheet(piece:Piece,sheet:Sheet,gap:float,step:float):
 def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
     by_material={}
     for stock in stocks: by_material.setdefault(stock.material,[]).append(stock)
+    colours={}
+    for piece in pieces: colours.setdefault(piece.source_page,set()).add(piece.material)
     result=[]
     for material in dict.fromkeys(p.material for p in pieces):
-        items=sorted((p for p in pieces if p.material==material),key=lambda p:(p.source_page,-p.area_mm2,p.id))
+        # Single-colour source pages first, so they keep their PDF layout; pieces from mixed pages fill in after.
+        items=sorted((p for p in pieces if p.material==material),key=lambda p:(len(colours[p.source_page])>1,p.source_page,-p.area_mm2,p.id))
         available=by_material.get(material,[]);slots=[s for s in available for _ in range(s.quantity)]
         if not slots: raise NestingError(f"inventory has no sheets for material {material}")
         opened=[]
