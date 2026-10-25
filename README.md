@@ -22,6 +22,17 @@ Alternatively, run `python -m papercraft_nester.cli nest ...` with `PYTHONPATH=s
 
 The optimizer reports source sheet counts, packed sheet counts, utilization, and estimated reposition distance. The first version uses deterministic polygon placement heuristics; it is not a proof of globally optimal nesting. It supports rigid rotation with configurable angular search resolution and keeps complete piece outlines apart in its initial mode.
 
+## Recut a few pieces
+
+To cut some pieces again without touching the ones already cut, list them in a text file and add `--only`:
+
+```text
+papercraft-nester nest --svg ../../data/bowser/bowser-export.svg --manifest ../../data/bowser/bowser.yaml --inventory ../../data/bowser/inventory.json --only ../../data/bowser/recut.txt --output recut.svg --export recut-export.svg
+papercraft-nester cutpath --svg recut-export.svg --output recut-cutplan.svg
+```
+
+Each line (or comma-separated entry) of the list names pieces: `27` is the piece number drawn on the piece and picks both mirror twins, because they share it. `27:DB` adds one of that piece's edge labels and picks just one twin. `11-01` or `piece-11-01` is the piece ID. Text after `#` is a comment. Only the listed pieces are packed, snugly onto fresh sheets of their colour, with the labels they already carry. `recut-cutplan-cricut.svg` is the Cricut upload. In the models repository, `make recut MODEL=bowser` runs both steps on `data/bowser/recut.txt`.
+
 ## Cut path per sheet
 
 `papercraft-nester cutpath` orders the tool paths on each sheet of the converter's `<model>-export.svg`, leaving every piece where it is (no nesting). Each sheet (source page) is solved on its own, in four passes: **Cut** (a piece is always cut in one go; an edge within `--share-tol` of one a neighbour already cut is skipped), **Fold valley** and **Fold mountain** (separate passes, each fold line in either direction) and **Draw** (the short glue labels, the piece numbers and the circle or square round a mirror twin's number, as single-stroke pen paths). It reads only the export SVG, so it works whatever state the glue pairs or 3D fold are in.
