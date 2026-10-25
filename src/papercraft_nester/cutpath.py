@@ -337,6 +337,10 @@ class ExportFile:
             labels.append(text_strokes(t.get("data-label") or (t.text or "").strip(), float(t.get("x")),
                                        float(t.get("y")), float(t.get("font-size", "2")),
                                        float(rot.group(1)) if rot else 0.0))
+        for e in g.iter(f"{{{SVG}}}path"):  # the circle or square round a mirror twin's piece number
+            if e.get("data-operation") == "draw":
+                v = [float(n) for n in re.findall(NUM, e.get("d"))]
+                labels.append([list(zip(v[::2], v[1::2]))])
         outline = []
         for ring in rings(cut.get("d")):
             clean = despike(ring)
