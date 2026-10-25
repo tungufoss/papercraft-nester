@@ -89,11 +89,14 @@ def _repack(sheet:Sheet,gap:float,step:float):
             if (height(trial.placements),)<best_key: best,best_key=trial.placements,(height(trial.placements),)
     sheet.placements=best
 
-def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
+def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float,keep_layout:bool=True):
+    """keep_layout=False packs every piece snugly instead of keeping single-colour pages in their PDF layout
+    (a redo of a few pieces)."""
     by_material={}
     for stock in stocks: by_material.setdefault(stock.material,[]).append(stock)
     colours={}
     for piece in pieces: colours.setdefault(piece.source_page,set()).add(piece.material)
+    keep=lambda piece:keep_layout and len(colours[piece.source_page])==1
     result=[]
     for material in dict.fromkeys(p.material for p in pieces):
         # Single-colour source pages first, so they keep their PDF layout; pieces from mixed pages fill in after.
@@ -104,7 +107,7 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
         for piece in items:
             options=[]
             for sheet in opened:
-                placement=_find_on_sheet(piece,sheet,gap,step if sheet.source_page==piece.source_page else max(step,15.0),len(colours[piece.source_page])==1)
+                placement=_find_on_sheet(piece,sheet,gap,step if sheet.source_page==piece.source_page else max(step,15.0),keep(piece))
                 if placement:
                     x0,y0,x1,y1=bounds(placement.polygon);options.append(((y1,y0,x0,sheet.stock.width_mm*sheet.stock.height_mm),sheet,placement))
             if options:
@@ -114,7 +117,7 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
                 key=(stock.material,stock.width_mm,stock.height_mm,stock.label)
                 if key in seen: continue
                 seen.add(key);probe=Sheet(stock,len(result)+len(opened)+1,piece.source_page)
-                placement=_find_on_sheet(piece,probe,gap,step,len(colours[piece.source_page])==1)
+                placement=_find_on_sheet(piece,probe,gap,step,keep(piece))
                 if placement: possible.append(((stock.width_mm*stock.height_mm,stock.width_mm,stock.height_mm),slot,stock,placement))
             if not possible:
                 dims=", ".join(f"{s.width_mm:g}x{s.height_mm:g} mm x{s.quantity}" for s in available)
@@ -122,7 +125,7 @@ def nest(pieces:list[Piece],stocks:list[SheetStock],gap:float,step:float):
             _,slot,stock,placement=min(possible,key=lambda r:r[0]);slots.pop(slot)
             sheet=Sheet(stock,len(result)+len(opened)+1,piece.source_page);placement.sheet_index=sheet.index;sheet.placements.append(placement);opened.append(sheet)
         for sheet in opened:
-            if all(len(colours[p.piece.source_page])>1 for p in sheet.placements): _repack(sheet,gap,step)
+            if not any(keep(p.piece) for p in sheet.placements): _repack(sheet,gap,step)
         result.extend(opened)
     for index,sheet in enumerate(result,1):
         sheet.index=index

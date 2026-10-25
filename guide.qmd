@@ -61,6 +61,16 @@ Add `--export nested-export.svg` to also write the nested sheets as a `lowpoly-e
 with every piece's coordinates moved onto its sheet. Give that file to `cutpath` (step 5) to
 order the tool paths on the nested sheets; its pages are numbered by sheet.
 
+### Recut a few pieces
+
+When some pieces are already cut and only a few need cutting again (a bad cut, a torn tab), list
+them in a text file and pass it with `--only recut.txt`. Each line (or comma-separated entry) is a
+piece ID (`piece-11-01` or `11-01`), the piece number drawn on the cut piece (`27`, which names
+both mirror twins since they share it), or a number with one of that piece's edge labels (`27:DB`)
+to name just one twin; text after `#` is a comment. Only those pieces are nested, packed snugly
+onto fresh sheets of their colour, with the labels they already have, so they glue onto the pieces
+already cut. Run `cutpath` on the `--export` file as usual for the Cricut upload.
+
 The report lists the source and packed sheet counts, utilization per packed sheet, and estimated
 inter-piece reposition distance. If the heuristic cannot fit the inventory, it writes the source
 page arrangement as a comparison baseline and reports that choice.
