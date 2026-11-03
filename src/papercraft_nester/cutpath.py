@@ -1,9 +1,8 @@
 """Cut / fold / pen path planning per cardstock sheet, pieces left where they are.
 
 Reads a `lowpoly-export/1` SVG. A sheet is one source page. On each sheet four passes are ordered
-on their own: Cut (one job per piece; a piece is always cut in one go, edges a neighbour already cut
-are skipped), Fold valley and Fold mountain (one job per fold line, either direction) and Draw
-(the short labels in a single-stroke pen font).
+in tool order: Draw, Fold mountain, Fold valley, then Cut. Draw starts at the sheet's top center;
+each following pass starts at the previous nonempty pass's endpoint.
 """
 from __future__ import annotations
 import csv
@@ -25,8 +24,8 @@ ET.register_namespace("", SVG)
 ET.register_namespace("inkscape", INK)
 ET.register_namespace("sodipodi", SODI)
 NUM = r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?"
-PASSES = [("cut", "Cut", "#000000"), ("valley", "Fold valley", "#2e8b57"),
-          ("mountain", "Fold mountain", "#1f5fbf"), ("draw", "Draw", "#444444")]
+PASSES = [("draw", "Draw", "#444444"), ("mountain", "Fold mountain", "#1f5fbf"),
+          ("valley", "Fold valley", "#2e8b57"), ("cut", "Cut", "#000000")]
 TOOLS = {"cut": "fine-point blade", "valley": "debossing tip", "mountain": "double scoring wheel",
          "draw": "pen"}  # Helga's Cricut tool per pass
 # Design Space names an imported layer after its id: one group per sheet (P04-red) holding
@@ -72,6 +71,30 @@ def length(lines: list[list[Point]]) -> float:
     return sum(dist(a, b) for line in lines for a, b in zip(line, line[1:]))
 
 
+def bounded_folds(folds, outline: Polygon):
+    """Keep score/deboss strokes on their owning paper, including concavities and holes.
+
+    Retain coordinates of valid strokes; the small tolerance covers SVG rounding.
+    A crossing stroke is split rather than joining across missing paper.
+    """
+    out = []
+    tolerant = outline.buffer(0.05)
+    for a, b in folds:
+        line = LineString([a, b])
+        if line.length < 1e-6:
+            continue
+        if tolerant.covers(line):
+            out.append((a, b))
+            continue
+        clipped = line.intersection(outline)
+        parts = [clipped] if clipped.geom_type == "LineString" else list(getattr(clipped, "geoms", []))
+        for part in parts:
+            if part.geom_type == "LineString" and part.length > 1e-6:
+                points = list(part.coords)
+                out.extend(zip(points, points[1:]))
+    return out
+
+
 @dataclass
 class Piece:
     id: str
@@ -93,6 +116,7 @@ class Pass:
     length: float
     strokes: list[tuple[list[str], list[Point]]] = field(default_factory=list)  # tool-down runs
     bridges: list[list[Point]] = field(default_factory=list)  # blade-down moves through waste
+    start: Point = (0.0, 0.0)  # actual entry position, inherited from the preceding tool pass
 
     def join(self, waste: "Waste | None", home: Point) -> None:
         """Tool-down runs: consecutive polylines are joined when the move between them runs only
@@ -156,19 +180,26 @@ class Sheet:
 
     def plan(self, router, share_tol: float, stay_down: float = 0.0, min_width: float = 20.0,
              min_area: float = 50.0) -> "Sheet":
-        home = self.origin
-        cut = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
-        self.passes = [self._cut_pass(cut, router.solve(cut, home), home, share_tol)]
-        for kind in ("valley", "mountain"):
-            jobs = [Job.line(p.id, a, b) for p in self.pieces for a, b in p.folds[kind]]
-            self.passes.append(self._simple_pass(kind, jobs, router.solve(jobs, home), home))
-        jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
-        self.passes.append(self._simple_pass("draw", jobs, router.solve(jobs, home), home))
+        pos = (self.origin[0] + self.size[0] / 2, self.origin[1])
+        self.passes = []
         sheet = box(self.origin[0], self.origin[1], self.origin[0] + self.size[0], self.origin[1] + self.size[1])
         self.waste = (Waste([p.rings[0] for p in self.pieces], sheet, stay_down, min_width, min_area)
                       if stay_down > 0 else None)
-        for p in self.passes:
-            p.join(self.waste if p.kind == "cut" else None, home)  # folds and labels always lift
+        for kind, _, _ in PASSES:
+            if kind == "draw":
+                jobs = [Job.strokes(p.id, strokes) for p in self.pieces for strokes in p.labels]
+            elif kind == "cut":
+                jobs = [Job.loop(p.id, p.rings[0]) for p in self.pieces]
+            else:
+                jobs = [Job.line(p.id, a, b) for p in self.pieces for a, b in p.folds[kind]]
+            route = router.solve(jobs, pos)
+            p = (self._cut_pass(jobs, route, pos, share_tol) if kind == "cut"
+                 else self._simple_pass(kind, jobs, route, pos))
+            p.start = pos
+            p.join(self.waste if kind == "cut" else None, pos)
+            self.passes.append(p)
+            if p.strokes:
+                pos = p.strokes[-1][1][-1]
         return self
 
     def _cut_pass(self, jobs, route, home, tol):
@@ -348,6 +379,12 @@ class ExportFile:
                 print(f"warning: {g.get('data-piece')} outline turns back on itself; "
                       f"dropped {len(ring) - len(clean)} needle vertex(es) so the blade does not slit the piece")
             outline.append(clean)
+        paper = Polygon(outline[0], outline[1:]).buffer(0)
+        for kind, strokes in folds.items():
+            clean = bounded_folds(strokes, paper)
+            if clean != strokes:
+                print(f"warning: {g.get('data-piece')} {kind} folds outside the piece were removed or clipped")
+            folds[kind] = clean
         sheet.pieces.append(Piece(g.get("data-piece"), g.get("data-material"), outline, folds, labels))
 
     def write(self, path: Path) -> None:
@@ -373,7 +410,7 @@ class ExportFile:
                                                     f"{{{INK}}}label": "Review", "style": "display:none"})
         for sheet in sheets:
             for p in sheet.passes:
-                moves, pos = [], sheet.origin
+                moves, pos = [], p.start
                 for lines in p.lines:
                     for line in lines:
                         if dist(pos, line[0]) > 1e-6:
@@ -400,7 +437,8 @@ class ExportFile:
             root = ET.Element(f"{{{SVG}}}svg", {"width": f"{w:g}mm", "height": f"{h:g}mm",
                                                 "viewBox": f"{x:g} {y:g} {w:g} {h:g}", "data-plan": "lowpoly-cutplan/1",
                                                 "data-source-page": str(sheet.page), "data-material": sheet.material})
-            for kind, name, colour in PASSES:
+            # Cricut displays SVG layers in reverse document order.
+            for kind, name, colour in reversed(PASSES):
                 p = next(p for p in sheet.passes if p.kind == kind)
                 if not p.strokes:
                     continue
@@ -431,7 +469,7 @@ class ExportFile:
                 dx, dy = x - sheet.origin[0], y - sheet.origin[1]
                 group = ET.SubElement(root, f"{{{SVG}}}g", {"id": f"P{sheet.page:02d}-{material}",
                                                            f"{{{INK}}}label": f"Page {sheet.page:02d} {material}"})
-                for kind, name, colour in PASSES:
+                for kind, name, colour in reversed(PASSES):
                     p = next(p for p in sheet.passes if p.kind == kind)
                     if not p.strokes:
                         continue
