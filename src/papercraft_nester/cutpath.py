@@ -393,7 +393,7 @@ class ExportFile:
         for view in self.root.iter(f"{{{SODI}}}namedview"):
             root.append(view)
         sheets = sorted(self.sheets.values(), key=lambda s: (s.page, s.material))
-        for kind, name, colour in PASSES:
+        for kind, name, colour in reversed(PASSES):  # cut (filled) at the bottom, so it never hides folds or labels
             layer = ET.SubElement(root, f"{{{SVG}}}g", {"id": f"layer-{kind}", f"{{{INK}}}groupmode": "layer",
                                                        f"{{{INK}}}label": name,
                                                        "style": f"fill:none;stroke:{colour};stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round"})
