@@ -28,7 +28,7 @@ def sheet_data(sheet) -> dict:
            "saved": [[r(p) for p in poly.exterior.coords] for poly in (sheet.waste.saved if sheet.waste else [])],
            "passes": {}}
     for p in sheet.passes:
-        lifts, pos = [], sheet.origin
+        lifts, pos = [], p.start
         for _, run in p.strokes:
             if dist(pos, run[0]) > 1e-6:
                 lifts.append([r(pos), r(run[0])])
@@ -36,7 +36,7 @@ def sheet_data(sheet) -> dict:
         out["passes"][p.kind] = {
             "strokes": [[r(q) for q in run] for _, run in p.strokes],
             "lines": [[r(line[0]), r(line[-1])] for job in p.lines for line in job] if p.kind in ("valley", "mountain") else [],
-            "bridges": [[r(q) for q in b] for b in p.bridges], "lifts": lifts,
+            "bridges": [[r(q) for q in b] for b in p.bridges], "lifts": lifts, "start": r(p.start),
             "stats": {"lifts": len(p.strokes), "travel_mm": round(p.travel), "source_mm": round(p.source_travel)}}
     return out
 
@@ -115,7 +115,7 @@ function show(i) {
       arrows(m, colour, Math.hypot(m[1][0] - m[0][0], m[1][1] - m[0][1]) * 1.0001 || 1, g);
     });
     if (kind !== 'draw' && !p.lines.length) {
-      label(s.origin, 0, colour, 'node', g);
+      label(p.start, 0, colour, 'node', g);
       p.strokes.forEach((run, n) => label(run[0], n + 1, colour, 'node', g));
     }
     groups[name] = g;

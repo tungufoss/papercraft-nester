@@ -31,8 +31,7 @@ def main(src: Path, dst: Path, page: int | None = None) -> None:
     doc = ExportFile(src)
     sheet = min((s for s in doc.sheets.values() if page in (None, s.page)), key=lambda s: (s.page, s.material))
     sheet.plan(HeuristicRouter(), 0.35)
-    home = sheet.origin
-    pts = [p for piece in sheet.pieces for p in piece.rings[0]] + [home]
+    pts = [p for piece in sheet.pieces for p in piece.rings[0]] + [sheet.origin] + [p.start for p in sheet.passes]
     x0, y0 = min(p[0] for p in pts) - 3, min(p[1] for p in pts) - 3
     w, h = max(p[0] for p in pts) + 3 - x0, max(p[1] for p in pts) + 3 - y0
     kinds = [k for k in STYLE if next(p for p in sheet.passes if p.kind == k).jobs]  # skip empty passes
@@ -43,6 +42,7 @@ def main(src: Path, dst: Path, page: int | None = None) -> None:
     for row, kind in enumerate(kinds):
         name, colour, dash = STYLE[kind]
         p = next(p for p in sheet.passes if p.kind == kind)
+        home = p.start  # each pass starts where the previous one ended
         before = [job.options[0] for job in p.jobs]
         for col, (title, lines, length) in enumerate([("source order", before, p.source_travel),
                                                       ("planned", p.lines, p.travel)]):
